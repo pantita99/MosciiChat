@@ -40,7 +40,7 @@ public class ChatHub : Hub
             var receiverId = receiverUser.UserID;
             if (string.IsNullOrEmpty(receiverId))
             {
-                await Clients.Caller.SendAsync("ReceiveMessage", "System", "Receiver User ID is not available.");
+                await Clients.Caller.SendAsync("ReceiveMessage", "System", "Receiver User ID is not available");
                 return;
             }
 
