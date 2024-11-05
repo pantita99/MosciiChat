@@ -276,7 +276,7 @@ namespace Client
 
                 if (string.IsNullOrWhiteSpace(messageText))
                 {
-                    MessageBox.Show("Message cannot be empty.");
+                    MessageBox.Show("Message cannot be empty");
                     return;
                 }
 
