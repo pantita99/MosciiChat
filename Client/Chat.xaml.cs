@@ -27,7 +27,6 @@ namespace Client
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
 
 
-
         public Chat()
         {
             InitializeComponent();
@@ -40,6 +39,9 @@ namespace Client
 
             //messagesList.ItemsSource = Messages;
             GetUserList.ItemsSource = Users;
+
+
+            DataContext = this;
         }
 
 
@@ -70,7 +72,7 @@ namespace Client
             _statusRefreshTimer.Start();
         }
 
-     
+
 
         private async void InitializeSignalR()
         {
@@ -78,18 +80,12 @@ namespace Client
                 .WithUrl(url)
                 .Build();
 
-            _connection.On<string, byte[]>("ReceiveFile", SaveFile);
+            // Receive and display new messages
             _connection.On<string, string>("ReceiveMessage", (user, message) =>
             {
                 Dispatcher.Invoke(() =>
                 {
-                    Messages.Add(new ChatGetUserModel
-                    {
-                        SenderId = user,
-                        Message = message,
-                        Timestamp = DateTime.Now
-                    });
-                    ScrollToBottom();
+                    AddMessageToUI(message);  // Ensure new messages are displayed immediately
                 });
             });
 
@@ -103,6 +99,7 @@ namespace Client
                 MessageBox.Show($"Error connecting: {ex.Message}");
             }
         }
+
 
 
         private void SaveFile(string fileName, byte[] fileBytes)
@@ -176,28 +173,19 @@ namespace Client
 
             try
             {
-                var currentUserId = "yourCurrentUserId";
+                var currentUserId = "yourCurrentUserId";  // Replace with actual current user ID logic
                 var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", currentUserId, userId);
 
                 var chatHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetChatHistoryByGuid", chatGuid);
 
-                messagesList.Items.Clear(); // เคลียร์รายการเก่าใน ListBox
+                messagesList.Items.Clear(); // Clear existing messages
+
                 if (chatHistory.Any())
                 {
                     foreach (var message in chatHistory)
                     {
-                        var textList = message.Message.Split("#$");
-                        foreach (var addText in textList)
-                        {
-                            // สร้าง uc:mymessage สำหรับแต่ละข้อความ
-                            var messageControl = new Items.mymessage();
-                            messageControl.DataContext = new ChatGetUserModel { Message = addText };
-
-                            // เพิ่ม uc:mymessage ลงใน ListBox
-                            messagesList.Items.Add(messageControl);
-                        }
+                        AddMessageToUI(message.Message); // New method to handle adding messages to UI
                     }
-                    ScrollToBottom();
                 }
             }
             catch (Exception ex)
@@ -205,6 +193,22 @@ namespace Client
                 MessageBox.Show($"Error loading chat history: {ex.Message}");
             }
         }
+
+        private void AddMessageToUI(string messageText)
+        {
+            var textList = messageText.Split("#$");
+            foreach (var addText in textList)
+            {
+                // Create a new instance of your custom control for each message
+                var messageControl = new Items.mymessage();
+                messageControl.DataContext = new ChatGetUserModel { Message = addText };
+
+                // Add the control to the ListBox
+                messagesList.Items.Add(messageControl);
+            }
+            ScrollToBottom(); // Ensure the UI scrolls to the latest message
+        }
+
 
 
 
@@ -286,28 +290,23 @@ namespace Client
                     return;
                 }
 
-                var currentUserId = "yourCurrentUserId";
+                var currentUserId = "yourCurrentUserId";  // Replace with actual current user ID logic
                 var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", currentUserId, selectedUserId);
 
-                var newMessage = new ChatGetUserModel
-                {
-                    UserID = currentUserId,
-                    FullName = selectedUserFullname,
-                    Message = messageText,
-                    Timestamp = DateTime.Now
-                };
+                // Add the new message to the UI before sending to the server
+                AddMessageToUI(messageText);
 
-                Messages.Add(newMessage);
-                ScrollToBottom();
-
+                // Send the message to the server to be saved
                 await _connection.InvokeAsync("SaveChatHistory", chatGuid, currentUserId, selectedUserId, selectedUserFullname, messageText, null);
-                messageTextbox.Text = string.Empty;
+
+                messageTextbox.Text = string.Empty; // Clear the input box
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error sending message: {ex.Message}");
             }
         }
+
 
 
 
@@ -364,7 +363,7 @@ namespace Client
             if (sender is System.Windows.Controls.RadioButton radioButton) // ใช้ System.Windows.Controls.RadioButton ที่นี่
             {
                 if (ListNameContent != null && ChatsContent != null)
-                {  
+                {
                     if (radioButton.Content.ToString() == "List Name")
                     {
                         ListNameContent.Visibility = Visibility.Visible; // แสดง List Name

@@ -255,11 +255,11 @@
 
                 <!-- Messages area -->
                 <Border CornerRadius="15" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9"
-        Margin="0,0,0,5" VerticalAlignment="Stretch">
+Margin="0,0,0,5" VerticalAlignment="Stretch">
                     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="Auto">
                         <ListBox x:Name="messagesList" Padding="5,10,5,0"
-                 HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
-                 IsHitTestVisible="False" Margin="0"/>
+         HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
+         IsHitTestVisible="False" Margin="0"/>
                     </ScrollViewer>
                 </Border>
 
