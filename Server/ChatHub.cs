@@ -21,7 +21,6 @@ public class ChatHub : Hub
     {
         try
         {
-            // Retrieve the receiver's user info
             var receiverUser = await _context.TB_AUTHENTICATIONs.FirstOrDefaultAsync(u => u.FullName == receiverFullName);
             if (receiverUser == null)
             {
@@ -29,7 +28,6 @@ public class ChatHub : Hub
                 return;
             }
 
-            // Get current sender ID
             var senderId = GetCurrentUserId();
             if (senderId == 0)
             {
@@ -44,13 +42,13 @@ public class ChatHub : Hub
                 return;
             }
 
-            // Retrieve or create GUID for the chat
+            // สร้างหรือดึง GUID สำหรับแชท
             var chatGuid = await GetOrCreateChatGuid(senderId.ToString(), receiverId);
 
-            // Save or update the chat history
+            // บันทึกประวัติการแชท
             await SaveChatHistory(chatGuid, senderId.ToString(), receiverId, senderFullName, messageText);
 
-            // Send message to both the sender and receiver
+            // ส่งข้อความไปยังผู้รับและผู้ส่ง
             await Clients.User(receiverId).SendAsync("ReceiveMessage", senderFullName, messageText);
             await Clients.Caller.SendAsync("ReceiveMessage", senderFullName, messageText);
         }
@@ -59,6 +57,12 @@ public class ChatHub : Hub
             await Clients.Caller.SendAsync("ReceiveMessage", "System", $"Error sending message: {ex.Message}");
         }
     }
+
+
+
+    
+
+
 
     private int GetCurrentUserId()
     {
@@ -167,6 +171,10 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving chat history by GUID.");
         }
     }
+
+
+
+
 
     // ดึงรายชื่อผู้ใช้
     public async Task<List<ChatGetUserModel>> GetUserList()

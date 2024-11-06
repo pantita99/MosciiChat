@@ -25,6 +25,8 @@ namespace Client
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
         private Dictionary<string, ObservableCollection<ChatGetUserModel>> userChatHistories = new Dictionary<string, ObservableCollection<ChatGetUserModel>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
+        public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; }
+
 
 
         public Chat()
@@ -40,7 +42,7 @@ namespace Client
             //messagesList.ItemsSource = Messages;
             GetUserList.ItemsSource = Users;
 
-
+            UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
             DataContext = this;
         }
 
@@ -53,11 +55,9 @@ namespace Client
             // คำนวณความสูงของ TextBox ตามจำนวนบรรทัดที่มี
 
             int lineCount = textBox.LineCount; // จำนวนบรรทัดที่มีอยู่
-
-            // ปรับความสูงของ TextBox
-
-            // เลื่อน ScrollViewer ให้ไปที่ข้อความล่าสุด
-            this.ScrollToBottom();
+            
+            IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
+            ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
         }
 
 
@@ -144,6 +144,38 @@ namespace Client
         private string selectedUserFullname;
         private string selectedUserId; // ใช้ FullName แทน UserID
 
+
+       
+        
+        public string TextMessage { get; set; } // สำหรับการพิมพ์ข้อความ
+
+
+
+
+        private bool _isChatVisible = false;
+        public bool IsChatVisible
+        {
+            get { return _isChatVisible; }
+            set { SetValue(IsChatVisibleProperty, value); }
+        }
+
+        public static readonly DependencyProperty IsChatVisibleProperty =
+            DependencyProperty.Register("IsChatVisible", typeof(bool), typeof(Chat), new PropertyMetadata(false));
+
+        private bool _isPlaceholderVisible = true;  // ใช้ควบคุมการแสดง placeholder
+        public bool IsPlaceholderVisible
+        {
+            get { return _isPlaceholderVisible; }
+            set { SetValue(IsPlaceholderVisibleProperty, value); }
+        }
+
+        public static readonly DependencyProperty IsPlaceholderVisibleProperty =
+            DependencyProperty.Register("IsPlaceholderVisible", typeof(bool), typeof(Chat), new PropertyMetadata(true));
+
+
+
+
+
         private void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
@@ -151,21 +183,34 @@ namespace Client
                 selectedUserId = selectedUser.UserID;
                 selectedUserFullname = selectedUser.FullName;
 
+                // แสดงพื้นที่แชทเมื่อเลือกผู้ใช้
+                IsChatVisible = true;
+
+                messageTextbox.Text = string.Empty;
+
+
+                IsPlaceholderVisible = true;  // เริ่มต้นแสดง placeholder
+
+                // โหลดประวัติการแชท
                 LoadChatHistory(selectedUserId);
+                
             }
             else
             {
                 selectedUserId = null;
                 selectedUserFullname = null;
                 Messages.Clear();
+
+                // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
+                IsChatVisible = false;
+                IsPlaceholderVisible = false;  // ซ่อน placeholder เมื่อไม่มีการเลือกผู้ใช้
             }
         }
 
+        // Chat.xaml.cs
 
 
-
-
-
+      
 
         private async void LoadChatHistory(string userId)
         {
@@ -199,21 +244,16 @@ namespace Client
             var textList = messageText.Split("#$");
             foreach (var addText in textList)
             {
-                // Create a new instance of your custom control for each message
+                // สร้างข้อความและแสดงใน ListBox
                 var messageControl = new Items.mymessage();
                 messageControl.DataContext = new ChatGetUserModel { Message = addText };
 
-                // Add the control to the ListBox
+                // เพิ่มข้อความใน ListBox
                 messagesList.Items.Add(messageControl);
             }
-            ScrollToBottom(); // Ensure the UI scrolls to the latest message
+
+            ScrollToBottom(); // เลื่อนแสดงข้อความล่าสุดที่ด้านล่าง
         }
-
-
-
-
-
-
 
 
 
@@ -222,13 +262,10 @@ namespace Client
         {
             if (messagesList.Items.Count > 0)
             {
-                messagesList.ScrollIntoView(messagesList.Items[^1]);
+                // เลื่อนให้แสดงข้อความล่าสุด
+                messagesScrollViewer.ScrollToEnd();
             }
         }
-
-
-
-
 
 
         private void UserControl_MouseDown(object sender, MouseButtonEventArgs e)

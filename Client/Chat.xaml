@@ -7,7 +7,6 @@
         xmlns:local="clr-namespace:Client"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         xmlns:uc="clr-namespace:Client.Items" 
-
         xmlns:Icon="http://metro.mahapps.com/winfx/xaml/iconpacks"
         mc:Ignorable="d"
         AllowsTransparency="True"
@@ -18,12 +17,10 @@
         Width="940"
         MouseDown="UserControl_MouseDown">
     <Window.Resources>
-
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
-
-       
-
+        <local:MultiBoolToVisibilityConverter x:Key="MultiBoolToVis" />
     </Window.Resources>
+
 
     <Grid>
         <Grid.RowDefinitions>
@@ -226,15 +223,25 @@
                         </ListBox>
                     </Grid>
 
-                    <Grid x:Name="ChatsContent" Visibility="Collapsed">
-                        <!-- เนื้อหาสำหรับ Chats -->
-                        <TextBlock Text="เนื้อหาของแท็บ Chats จะปรากฏที่นี่" 
-                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Grid x:Name="ChatsContent" Visibility="Visible" Grid.Row="1">
+                      
+                      
+
+                      
+                         
                     </Grid>
+
+
+
                 </Grid>
             </Grid>
         </Border>
 
+
+        <Grid Grid.Row="1" >
+            
+        </Grid>
+        
 
         <!-- Right side: Chat area -->
         <Border CornerRadius="15" Background="#FFFFFF" BorderBrush="Transparent"
@@ -245,21 +252,21 @@
 
             <Grid>
                 <Grid.RowDefinitions>
+                    <!-- กำหนด Row สำหรับแสดงข้อความให้มีความยืดหยุ่น -->
                     <RowDefinition Height="*" />
+                    <!-- ส่วนข้อความ -->
                     <RowDefinition Height="Auto" />
+                    <!-- ส่วนของ TextBox -->
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
                 <!-- Messages area -->
-                <Border CornerRadius="15" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9"
-Margin="0,0,0,5" VerticalAlignment="Stretch">
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Height="Auto">
-                        <ListBox x:Name="messagesList" Padding="5,10,5,0"
-         HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
-         IsHitTestVisible="False" Margin="0"/>
+                <Border CornerRadius="15" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
+                    <ScrollViewer x:Name="messagesScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                        <ListBox x:Name="messagesList" Padding="5,10,5,0" HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
+                     IsHitTestVisible="False" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" />
                     </ScrollViewer>
                 </Border>
 
@@ -271,26 +278,52 @@ Margin="0,0,0,5" VerticalAlignment="Stretch">
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock VerticalAlignment="Bottom" Foreground="#868686" FontSize="13"
-                               Text="Type a message..."
-                               Visibility="{Binding ElementName=messageTextbox, Path=Text.IsEmpty, Converter={StaticResource BoolToVis}}"
-                               Margin="35,0,0,26" />
+                        <TextBlock VerticalAlignment="Bottom" 
+                                   Foreground="#868686" 
+                                   FontSize="13" 
+                                   Text="Type a message..."
+                                   Margin="35,0,0,26">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource MultiBoolToVis}">
+                                    <Binding Path="IsChatVisible" />
+                                    <Binding Path="IsPlaceholderVisible" />
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
 
-                        <TextBox x:Name="messageTextbox" Style="{StaticResource messageTextbox}"   
-                             Background="Transparent" TextWrapping="Wrap" AcceptsReturn="True"
-                             VerticalScrollBarVisibility="Hidden" Text="{Binding TextMessage, UpdateSourceTrigger=PropertyChanged}"
-                             VerticalAlignment="Bottom" Margin="20,10,20,10" MaxHeight="100" MinHeight="40"
-                             TextChanged="MessageTextbox_TextChanged"/>
+
+
+                        <!-- TextBox สำหรับพิมพ์ข้อความ -->
+                                    <TextBox x:Name="messageTextbox" 
+                                     Style="{StaticResource messageTextbox}"   
+                                     Background="Transparent" 
+                                     TextWrapping="Wrap" 
+                                     AcceptsReturn="True"
+                                     VerticalScrollBarVisibility="Hidden" 
+                                     Text="{Binding TextMessage, UpdateSourceTrigger=PropertyChanged}"
+                                     VerticalAlignment="Bottom" 
+                                     Margin="20,10,20,10" 
+                                     MaxHeight="100" 
+                                     MinHeight="40"
+                                     TextChanged="MessageTextbox_TextChanged"
+                                     Visibility="{Binding IsChatVisible, Converter={StaticResource BoolToVis}}" />
+
+
+
+
+
 
                         <!-- Send Button -->
-                        <Button x:Name="Send" VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                            Margin="0,0,40,20" Width="30" Height="30" Click="SendButton_Click">
+                        <Button x:Name="Send" 
+                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                    Margin="0,0,40,20" Width="30" Height="30" 
+                    Click="SendButton_Click"
+                    Visibility="{Binding IsChatVisible, Converter={StaticResource BoolToVis}}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border Background="#007AFF " BorderThickness="0" CornerRadius="20" x:Name="border">
+                                    <Border Background="#007AFF" BorderThickness="0" CornerRadius="20" x:Name="border">
                                         <Grid>
-                                            <Icon:PackIconMaterial Kind="Send" Width="15" Height="15" Foreground="White"
-                                                               VerticalAlignment="Center" Margin="10 0 0 0" />
+                                            <Icon:PackIconMaterial Kind="Send" Width="15" Height="15" Foreground="White" VerticalAlignment="Center" Margin="10 0 0 0" />
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -308,14 +341,16 @@ Margin="0,0,0,5" VerticalAlignment="Stretch">
                         </Button>
 
                         <!-- Send File Button -->
-                        <Button x:Name="Sendfile" VerticalAlignment="Bottom" HorizontalAlignment="Right"
-                            Margin="80 20" Width="20" Height="30" Click="SendFile_Click" Panel.ZIndex="2">
+                        <Button x:Name="Sendfile" 
+                    VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                    Margin="80 20" Width="20" Height="30" 
+                    Click="SendFile_Click" Panel.ZIndex="2"
+                    Visibility="{Binding IsChatVisible, Converter={StaticResource BoolToVis}}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
                                     <Border Background="Transparent" BorderThickness="0" CornerRadius="10" x:Name="border">
                                         <Grid>
-                                            <Icon:PackIconMaterial Kind="Paperclip" Width="19" Height="20"
-                                                               Foreground="#a6a6a6" VerticalAlignment="Center" />
+                                            <Icon:PackIconMaterial Kind="Paperclip" Width="19" Height="20" Foreground="#a6a6a6" VerticalAlignment="Center" />
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>
@@ -331,9 +366,12 @@ Margin="0,0,0,5" VerticalAlignment="Stretch">
                                 </ControlTemplate>
                             </Button.Template>
                         </Button>
+
                     </Grid>
                 </Border>
+
             </Grid>
+
         </Border>
     </Grid>
 
