@@ -7,10 +7,10 @@
     <UserControl.Resources>
         <Style TargetType="Border">
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Background" Value="#007AFF " />
+            <Setter Property="Background" Value="#5a81fa " />
             <Setter Property="Margin" Value="0 5 0 0" />
             <Setter Property="Padding" Value="10 5" />
-            <Setter Property="CornerRadius" Value="15" />
+            <Setter Property="CornerRadius" Value="10" />
             <Setter Property="IsHitTestVisible" Value="False" />
            
                

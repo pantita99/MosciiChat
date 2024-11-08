@@ -60,10 +60,6 @@ public class ChatHub : Hub
 
 
 
-    
-
-
-
     private int GetCurrentUserId()
     {
         // สมมติว่าคุณเก็บ User ID ไว้ใน Context
@@ -177,7 +173,9 @@ public class ChatHub : Hub
 
 
     // ดึงรายชื่อผู้ใช้
-    public async Task<List<ChatGetUserModel>> GetUserList()
+
+    // แก้ไข GetUserList ให้เป็นฟังก์ชัน (method)
+    public async Task<List<ChatGetUserModel>> GetUserListAsync()
     {
         try
         {
@@ -198,6 +196,34 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving the user list.");
         }
     }
+
+
+    public async Task<List<ChatGetUserModel>> GetUserListWithChatHistoryAsync()
+    {
+        try
+        {
+            // ดึงข้อมูลผู้ใช้ที่มีประวัติแชท
+            var usersWithHistory = await _context.TB_AUTHENTICATIONs
+                .Where(auth => _context.TB_CHATHISTRies
+                    .Any(chat => chat.ID == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
+                .Select(auth => new ChatGetUserModel
+                {
+                    UserID = auth.UserID.ToString(),
+                    FullName = auth.FullName,
+                    UserConnected = auth.UserConnected
+                })
+                .ToListAsync();
+
+            return usersWithHistory;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in GetUserListWithChatHistoryAsync: {ex.Message}");
+            throw new HubException("An error occurred while retrieving users with chat history.");
+        }
+    }
+
+
 
 
     public async Task SaveChatHistory(string guid, string senderId, string receiverId, string name, string message, string filename = null)
@@ -251,6 +277,7 @@ public class ChatHub : Hub
 
 
 
+
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
     {
         // Look for an existing GUID for the chat between sender and receiver
@@ -264,6 +291,7 @@ public class ChatHub : Hub
     }
 
 
+   
 
 
     // โมเดลข้อมูลผู้ใช้

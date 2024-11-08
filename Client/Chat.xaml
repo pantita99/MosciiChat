@@ -152,19 +152,19 @@
 
                         <!-- RadioButtons for Menu Navigation -->
                         <RadioButton x:Name="ListNameRadioButton" Content="List Name" GroupName="TabGroup" 
-              Background="Transparent"
-              HorizontalAlignment="Stretch" VerticalAlignment="Center"
-              IsChecked="True"  
-              Style="{StaticResource TabButtonStyle}" 
-              Checked="RadioButton_Checked" />
+                                     Background="Transparent"
+                                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                     IsChecked="True"  
+                                     Style="{StaticResource TabButtonStyle}" 
+                                     Checked="RadioButton_Checked" />
 
                         <RadioButton x:Name="ChatsRadioButton" Content="Chats" GroupName="TabGroup"
-              Background="Transparent"
-              HorizontalAlignment="Stretch" VerticalAlignment="Center"
-              Grid.Column="1"
-              Style="{StaticResource TabButtonStyle}" 
-              Checked="RadioButton_Checked" 
-              Unchecked="RadioButton_Unchecked" />
+                                     Background="Transparent"
+                                     HorizontalAlignment="Stretch" VerticalAlignment="Center"
+                                     Grid.Column="1"
+                                     Style="{StaticResource TabButtonStyle}" 
+                                     Checked="RadioButton_Checked" 
+                                     Unchecked="RadioButton_Unchecked"  />
 
                     </Grid>
                 </Border>
@@ -224,11 +224,19 @@
                     </Grid>
 
                     <Grid x:Name="ChatsContent" Visibility="Visible" Grid.Row="1">
-                      
-                      
-
-                      
-                         
+                        <ListBox x:Name="GetUserListWithChatHistory" Background="Transparent"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     ScrollViewer.VerticalScrollBarVisibility="Hidden"
+                                     SelectionChanged="GetUserListWithChatHistory_SelectionChanged"
+                                     BorderThickness="0" Padding="5" Panel.ZIndex="3">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,0,0,8">
+                                        <uc:Profile FullName="{Binding FullName}" Background="Transparent"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
                     </Grid>
 
 
@@ -310,9 +318,6 @@
 
 
 
-
-
-
                         <!-- Send Button -->
                         <Button x:Name="Send" 
                     VerticalAlignment="Bottom" HorizontalAlignment="Right"
@@ -321,9 +326,9 @@
                     Visibility="{Binding IsChatVisible, Converter={StaticResource BoolToVis}}">
                             <Button.Template>
                                 <ControlTemplate TargetType="Button">
-                                    <Border Background="#007AFF" BorderThickness="0" CornerRadius="20" x:Name="border">
+                                    <Border Background="#5a81fa" BorderThickness="0" CornerRadius="20" x:Name="border">
                                         <Grid>
-                                            <Icon:PackIconMaterial Kind="Send" Width="15" Height="15" Foreground="White" VerticalAlignment="Center" Margin="10 0 0 0" />
+                                            <Icon:PackIconMaterial Kind="Send" Width="12" Height="12" Foreground="White" VerticalAlignment="Center" Margin="10 0 0 0" />
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>
