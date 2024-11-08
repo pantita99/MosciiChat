@@ -17,7 +17,7 @@ namespace Client
             if (value is bool isConnected && isConnected)
                 return Brushes.Green; // ออนไลน์เป็นสีเขียว
             else
-                return Brushes.Red; // ออฟไลน์เป็นสีแดง
+                return Brushes.Gray; // ออฟไลน์เป็นสีแดง
         }
 
         public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)

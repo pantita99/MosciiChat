@@ -19,6 +19,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiBoolToVisibilityConverter x:Key="MultiBoolToVis" />
+     
     </Window.Resources>
 
 
@@ -225,10 +226,47 @@
 
                     <Grid x:Name="ChatsContent" Visibility="Visible" Grid.Row="1">
                         <ListBox x:Name="GetUserListWithChatHistory" Background="Transparent"
-                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                     ScrollViewer.VerticalScrollBarVisibility="Hidden"
-                                     SelectionChanged="GetUserListWithChatHistory_SelectionChanged"
-                                     BorderThickness="0" Padding="5" Panel.ZIndex="3">
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+             ScrollViewer.VerticalScrollBarVisibility="Hidden"
+             SelectionChanged="GetUserListWithChatHistory_SelectionChanged"
+             BorderThickness="0" Padding="5" Panel.ZIndex="3">
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                    <Setter Property="Padding" Value="2"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border x:Name="Border" Background="Transparent" 
+                                    CornerRadius="10" BorderThickness="0" Margin="0,3,0,3">
+                                                    <ContentPresenter HorizontalAlignment="Stretch" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <!-- Hover effect -->
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Border" Property="Background" Value="#E3E9F3"/>
+                                                        <Setter TargetName="Border" Property="Opacity" Value="0.85"/>
+                                                    </Trigger>
+                                                    <!-- Selected effect -->
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Border" Property="Background">
+                                                            <Setter.Value>
+                                                                <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                                                    <GradientStop Color="#F5FAFF" Offset="0.0"/>
+                                                                    <GradientStop Color="#E8F3FF" Offset="1.0"/>
+                                                                </LinearGradientBrush>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                        <Setter TargetName="Border" Property="Opacity" Value="0.9"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+
+                            <!-- ItemTemplate for chat list -->
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Grid Margin="0,0,0,8">
