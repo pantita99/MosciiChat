@@ -117,25 +117,26 @@
 
 
         <!-- Background Border with Gradient and Shadow -->
-        <Border CornerRadius="15" BorderThickness="2" Grid.ColumnSpan="3"
+        <Border CornerRadius="20" BorderThickness="2" Grid.ColumnSpan="3"
             Margin="0,0,0,0" Grid.RowSpan="2" Opacity="1">
             <Border.Background>
                 <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
-                    <GradientStop Color="#f0f3fa" Offset="0" />
-                    <GradientStop Color="#f0f3fa" Offset="0.5" />
-                    <GradientStop Color="#f0f3fa" Offset="1" />
+                    <GradientStop Color="#f2f5ff" Offset="0" />
+                    <GradientStop Color="#f2f5ff" Offset="0.5" />
+                    <GradientStop Color="#f2f5ff" Offset="1" />
                 </LinearGradientBrush>
             </Border.Background>
         </Border>
 
 
-        <Border CornerRadius="15" Grid.Row="1" Grid.Column="0" SnapsToDevicePixels="True"
+        <Border CornerRadius="20" Grid.Row="1" Grid.Column="0" SnapsToDevicePixels="True"
         Background="#FFFFFF" BorderBrush="Transparent" BorderThickness="1"
         Padding="10" Margin="30,10,20,20" Opacity="0.9">
 
             <Border.Effect>
-                <DropShadowEffect Color="#B2C8E1" BlurRadius="20" ShadowDepth="3" Opacity="0.2"/>
+                <DropShadowEffect Color="#A8B9D6" BlurRadius="15" ShadowDepth="2" Opacity="0.15"/>
             </Border.Effect>
+          
 
             <Grid Margin="10,10,10,0">
                 <Grid.RowDefinitions>
@@ -144,7 +145,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- Tabs Control -->
-                <Border CornerRadius="15" Background="#E6EEFF" Height="30" Margin="0,0,0,10">
+                <Border CornerRadius="15" Background="#ffffff" Height="30" Margin="0,0,0,10">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -293,7 +294,7 @@
         <Border CornerRadius="15" Background="#FFFFFF" BorderBrush="Transparent"
             Grid.Column="1" Margin="0,45,30,20" Grid.ColumnSpan="2" Grid.RowSpan="2" BorderThickness="1">
             <Border.Effect>
-                <DropShadowEffect Color="#B2C8E1" BlurRadius="20" ShadowDepth="3" Opacity="0.2"/>
+                <DropShadowEffect Color="#A8B9D6" BlurRadius="15" ShadowDepth="2" Opacity="0.15"/>
             </Border.Effect>
 
             <Grid>
@@ -309,7 +310,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Messages area -->
-                <Border CornerRadius="15" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
+                <Border CornerRadius="20" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
                     <ScrollViewer x:Name="messagesScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ListBox x:Name="messagesList" Padding="5,10,5,0" HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
                      IsHitTestVisible="False" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" />
@@ -317,7 +318,7 @@
                 </Border>
 
                 <!-- Input message area -->
-                <Border Grid.Row="1">
+                <Border Grid.Row="1" CornerRadius="20">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
@@ -327,7 +328,7 @@
                         <TextBlock VerticalAlignment="Bottom" 
                                    Foreground="#868686" 
                                    FontSize="13" 
-                                   Text="Type a message..."
+                                   Text="Type her."
                                    Margin="35,0,0,26">
                             <TextBlock.Visibility>
                                 <MultiBinding Converter="{StaticResource MultiBoolToVis}">
@@ -342,7 +343,7 @@
                         <!-- TextBox สำหรับพิมพ์ข้อความ -->
                                     <TextBox x:Name="messageTextbox" 
                                      Style="{StaticResource messageTextbox}"   
-                                     Background="Transparent" 
+                                     Background="#f8f9fd" 
                                      TextWrapping="Wrap" 
                                      AcceptsReturn="True"
                                      VerticalScrollBarVisibility="Hidden" 
@@ -366,7 +367,7 @@
                                 <ControlTemplate TargetType="Button">
                                     <Border Background="#5a81fa" BorderThickness="0" CornerRadius="20" x:Name="border">
                                         <Grid>
-                                            <Icon:PackIconMaterial Kind="Send" Width="12" Height="12" Foreground="White" VerticalAlignment="Center" Margin="10 0 0 0" />
+                                            <Icon:PackIconMaterial Kind="Send" Width="15" Height="15" Foreground="White" VerticalAlignment="Center" Margin="10 0 0 0" />
                                         </Grid>
                                     </Border>
                                     <ControlTemplate.Triggers>

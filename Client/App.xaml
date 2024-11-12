@@ -120,7 +120,7 @@
                         <ControlTemplate TargetType="RadioButton">
                             <Border x:Name="Border" 
                         Background="{TemplateBinding Background}" 
-                        CornerRadius="10" Padding="25,10">
+                        CornerRadius="15" Padding="25,10">
                                 <!-- แทนที่ ContentPresenter ด้วย TextBlock -->
                                 <TextBlock x:Name="Text" Text="{TemplateBinding Content}" 
                                HorizontalAlignment="Center" 
