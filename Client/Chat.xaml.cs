@@ -44,9 +44,6 @@ namespace Client
             UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
             DataContext = this;
         }
-
-
-
         private void MessageTextbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var textBox = sender as System.Windows.Controls.TextBox;
@@ -58,9 +55,6 @@ namespace Client
             IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
             ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
         }
-
-
-
         private void StartUserStatusRefresh()
         {
             _statusRefreshTimer = new DispatcherTimer
@@ -70,10 +64,6 @@ namespace Client
             _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
             _statusRefreshTimer.Start();
         }
-
-
-
-
         private async void InitializeSignalR()
         {
             _connection = new HubConnectionBuilder()
@@ -90,11 +80,7 @@ namespace Client
                 
             }
         }
-
-
-
-
-        private void SaveFile(string fileName, byte[] fileBytes)
+        private void StatusRefreshTimer(string fileName, byte[] fileBytes)
         {
             _statusRefreshTimer = new DispatcherTimer
             {
@@ -103,8 +89,6 @@ namespace Client
             _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
             _statusRefreshTimer.Start();
         }
-
-
         // ฟังก์ชันดึงข้อมูลผู้ใช้ทั้งหมด
         public async Task LoadUsers()
         {
@@ -130,10 +114,6 @@ namespace Client
                 MessageBox.Show($"Error loading user list: {ex.Message}");
             }
         }
-
-
-
-
         // ฟังก์ชันดึงข้อมูลผู้ใช้ที่มีประวัติแชท
         public async Task LoadUsersWithChatHistory()
         {
@@ -164,17 +144,6 @@ namespace Client
                 MessageBox.Show($"Error loading users with chat history: {ex.Message}");
             }
         }
-        private void MessageTextbox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            var textBox = sender as System.Windows.Controls.TextBox;
-
-            // คำนวณความสูงของ TextBox ตามจำนวนบรรทัดที่มี
-
-            int lineCount = textBox.LineCount; // จำนวนบรรทัดที่มีอยู่
-            
-            IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
-            ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
-        }
         private void SaveFile(string fileName, byte[] fileBytes)
         {
             // กำหนด path สำหรับบันทึกไฟล์
@@ -186,13 +155,6 @@ namespace Client
             // แจ้งผู้ใช้ว่าไฟล์ถูกบันทึกเรียบร้อยแล้ว
             MessageBox.Show($"File {fileName} saved at {savePath}");
         }
-
-
-
-        
-
-
-
         private void GetUserListWithChatHistory_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (GetUserListWithChatHistory.SelectedItem is ChatGetUserModel selectedUserWithHistory)
@@ -289,14 +251,9 @@ namespace Client
                 // Load the chat history for the selected user
                 LoadChatHistory(selectedUserId);
             }
-        }
-
-
-
-                // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
-                IsChatVisible = false;
-                IsPlaceholderVisible = false;
-            }
+            // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
+            IsChatVisible = false;
+            IsPlaceholderVisible = false;
         }
         private async void LoadChatHistory(string userId)
         {
@@ -329,7 +286,7 @@ namespace Client
                 if (chatHistory == null || !chatHistory.Any())
                 {
                     // ถ้าไม่มีประวัติการสนทนา ให้บันทึกข้อความว่างในฐานข้อมูลเพื่อสร้างบันทึกใหม่
-                    await _connection.InvokeAsync("SaveChatHistory", chatGuid, currentUserId, userId, selectedUserFullname, string.Empty, DateTime.Now);
+                    await _connection.InvokeAsync("SaveChatHistory", chatGuid, myUserID, userId, selectedUserFullname, string.Empty, DateTime.Now);
 
                     // แสดงข้อความเริ่มต้นว่าไม่มีประวัติ
                     messagesList.Items.Clear();
