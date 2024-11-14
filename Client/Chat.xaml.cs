@@ -26,32 +26,70 @@ namespace Client
         private Dictionary<string, ObservableCollection<ChatGetUserModel>> userChatHistories = new Dictionary<string, ObservableCollection<ChatGetUserModel>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
         public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-
-
-
-
+        private readonly string myUserID = "kong";
         public Chat()
         {
             InitializeComponent();
             InitializeSignalR();
-
             StartUserStatusRefresh();
-
             Messages = new ObservableCollection<ChatGetUserModel>();
             Users = new ObservableCollection<ChatGetUserModel>();
-
-            //messagesList.ItemsSource = Messages;
             GetUserList.ItemsSource = Users;
-            // Set ItemsSource of ListBox specifically for users with chat history
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
-
-
             UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
             DataContext = this;
         }
-
-
-
+        private async void InitializeSignalR()
+        {
+            _connection = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+            try
+            {
+                await _connection.StartAsync();
+                await LoadUsers();
+            }
+            catch (Exception ex)
+            {
+                
+            }
+        }
+        private void StartUserStatusRefresh()
+        {
+            _statusRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMinutes(1)
+            };
+            _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
+            _statusRefreshTimer.Start();
+        }
+        public async Task LoadUsers()
+        {
+            try
+            {
+                // เรียกใช้ GetUserListAsync จาก HubConnection (ผู้ใช้ทั้งหมด)
+                var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListAsync");
+                // เรียกใช้ GetUserListWithChatHistoryAsync (ผู้ใช้ที่มีประวัติแชท)
+                var usersWithHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
+                // รวมผู้ใช้ทั้งหมดและผู้ใช้ที่มีประวัติแชท (หลีกเลี่ยงการซ้ำกัน)
+                var allUsers = users.Concat(usersWithHistory).DistinctBy(user => user.UserID).ToList();
+                // เคลียร์ข้อมูลใน ObservableCollection
+                Users.Clear();
+                // เพิ่มผู้ใช้ทั้งหมดใน Users
+                foreach (var user in allUsers)
+                {
+                    Users.Add(user);
+                }
+                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ทั้งหมด
+                GetUserList.ItemsSource = Users;
+                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่มีประวัติแชท
+                GetUserListWithChatHistory.ItemsSource = usersWithHistory;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading user list: {ex.Message}");
+            }
+        }
         private void MessageTextbox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var textBox = sender as System.Windows.Controls.TextBox;
@@ -63,49 +101,6 @@ namespace Client
             IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
             ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
         }
-
-
-
-        private void StartUserStatusRefresh()
-        {
-            _statusRefreshTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(1)
-            };
-            _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
-            _statusRefreshTimer.Start();
-        }
-
-
-
-        private async void InitializeSignalR()
-        {
-            _connection = new HubConnectionBuilder()
-                .WithUrl(url)
-                .Build();
-
-            // Receive and display new messages
-            _connection.On<string, string>("ReceiveMessage", (user, message) =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    AddMessageToUI(message);  // Ensure new messages are displayed immediately
-                });
-            });
-
-            try
-            {
-                await _connection.StartAsync();
-                await LoadUsers();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error connecting: {ex.Message}");
-            }
-        }
-
-
-
         private void SaveFile(string fileName, byte[] fileBytes)
         {
             // กำหนด path สำหรับบันทึกไฟล์
@@ -120,44 +115,7 @@ namespace Client
 
 
 
-        public async Task LoadUsers()
-        {
-            try
-            {
-                if (_connection.State != HubConnectionState.Connected)
-                {
-                    await _connection.StartAsync();
-                }
-
-                // เรียกใช้ GetUserListAsync จาก HubConnection (ผู้ใช้ทั้งหมด)
-                var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListAsync");
-
-                // เรียกใช้ GetUserListWithChatHistoryAsync (ผู้ใช้ที่มีประวัติแชท)
-                var usersWithHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
-
-                // รวมผู้ใช้ทั้งหมดและผู้ใช้ที่มีประวัติแชท (หลีกเลี่ยงการซ้ำกัน)
-                var allUsers = users.Concat(usersWithHistory).DistinctBy(user => user.UserID).ToList();
-
-                // เคลียร์ข้อมูลใน ObservableCollection
-                Users.Clear();
-
-                // เพิ่มผู้ใช้ทั้งหมดใน Users
-                foreach (var user in allUsers)
-                {
-                    Users.Add(user);
-                }
-
-                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ทั้งหมด
-                GetUserList.ItemsSource = Users;
-
-                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่มีประวัติแชท
-                GetUserListWithChatHistory.ItemsSource = usersWithHistory;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error loading user list: {ex.Message}");
-            }
-        }
+        
 
 
 
@@ -258,31 +216,21 @@ namespace Client
                 IsPlaceholderVisible = false;
             }
         }
-
-        // Chat.xaml.cs
-
-        private string GetCurrentUserId()
-        {
-            // ดำเนินการดึง ID ของผู้ใช้ปัจจุบัน
-            return "yourCurrentUserId"; // แทนที่ด้วยการดึง ID ผู้ใช้จริง
-        }
-
         private async void LoadChatHistory(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId)) return;
 
             try
             {
-                var currentUserId = GetCurrentUserId();  // ดึง ID ของผู้ใช้ปัจจุบัน
 
-                if (string.IsNullOrWhiteSpace(currentUserId))
+                if (string.IsNullOrWhiteSpace(myUserID))
                 {
                     MessageBox.Show("ไม่สามารถดึงข้อมูลผู้ใช้ปัจจุบันได้");
                     return;
                 }
 
                 // ดึงหรือสร้าง GUID สำหรับการสนทนาระหว่างผู้ใช้ปัจจุบันและผู้ใช้ที่เลือก
-                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", currentUserId, userId);
+                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, userId);
 
                 if (string.IsNullOrWhiteSpace(chatGuid))
                 {
@@ -408,15 +356,13 @@ namespace Client
                     MessageBox.Show("Connection to the server is not established.");
                     return;
                 }
-
-                var currentUserId = "yourCurrentUserId";  // Replace with actual current user ID logic
-                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", currentUserId, selectedUserId);
+                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, selectedUserId);
 
                 // Add the new message to the UI before sending to the server
                 AddMessageToUI(messageText);
 
                 // Send the message to the server to be saved
-                await _connection.InvokeAsync("SaveChatHistory", chatGuid, currentUserId, selectedUserId, selectedUserFullname, messageText, null);
+                await _connection.InvokeAsync("SaveChatHistory", chatGuid, myUserID, selectedUserId, selectedUserFullname, messageText, null);
 
                 messageTextbox.Text = string.Empty; // Clear the input box
             }
