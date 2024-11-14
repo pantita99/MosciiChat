@@ -180,7 +180,7 @@ public class ChatHub : Hub
     // ดึงรายชื่อผู้ใช้
 
     // แก้ไข GetUserList ให้เป็นฟังก์ชัน (method)
-    public async Task<List<ChatGetUserModel>> GetUserListAsync()
+    public async Task<List<ChatGetUserModel>> GetUserList()
     {
         try
         {
