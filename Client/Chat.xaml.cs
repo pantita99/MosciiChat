@@ -31,7 +31,7 @@ namespace Client
         public ObservableCollection<ChatGetUserModel> usersWithHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
 
         public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-        private readonly string myUserID = "kong";
+        private readonly string myUserID = "Wha";
         public Chat()
         {
             InitializeComponent();
@@ -232,9 +232,7 @@ namespace Client
 
             if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
             {
-                // Move the selected user from the "without history" list to the "with history" list
-                usersWithHistory.Add(selectedUser);
-                usersWithoutHistory.Remove(selectedUser);
+                               
 
                 // Automatically switch to ChatsContent
                 ChatsRadioButton.IsChecked = true;
@@ -252,8 +250,7 @@ namespace Client
                 LoadChatHistory(selectedUserId);
             }
             // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
-            IsChatVisible = false;
-            IsPlaceholderVisible = false;
+            
         }
         private async void LoadChatHistory(string userId)
         {
