@@ -25,6 +25,11 @@ namespace Client
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
         private Dictionary<string, ObservableCollection<ChatGetUserModel>> userChatHistories = new Dictionary<string, ObservableCollection<ChatGetUserModel>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
+
+
+        public ObservableCollection<ChatGetUserModel> usersWithoutHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
+        public ObservableCollection<ChatGetUserModel> usersWithHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
+
         public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
         private readonly string myUserID = "kong";
         public Chat()
@@ -39,21 +44,23 @@ namespace Client
             UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
             DataContext = this;
         }
-        private async void InitializeSignalR()
+
+
+
+        private void MessageTextbox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            _connection = new HubConnectionBuilder()
-                .WithUrl(url)
-                .Build();
-            try
-            {
-                await _connection.StartAsync();
-                await LoadUsers();
-            }
-            catch (Exception ex)
-            {
-                
-            }
+            var textBox = sender as System.Windows.Controls.TextBox;
+
+            // คำนวณความสูงของ TextBox ตามจำนวนบรรทัดที่มี
+
+            int lineCount = textBox.LineCount; // จำนวนบรรทัดที่มีอยู่
+            
+            IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
+            ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
         }
+
+
+
         private void StartUserStatusRefresh()
         {
             _statusRefreshTimer = new DispatcherTimer
@@ -63,31 +70,98 @@ namespace Client
             _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
             _statusRefreshTimer.Start();
         }
+
+
+
+
+        private async void InitializeSignalR()
+        {
+            _connection = new HubConnectionBuilder()
+                .WithUrl(url)
+                .Build();
+            try
+            {
+                await _connection.StartAsync();
+                await LoadUsers();              // โหลดผู้ใช้ทั้งหมด
+                await LoadUsersWithChatHistory(); // โหลดผู้ใช้ที่มีประวัติแชท
+            }
+            catch (Exception ex)
+            {
+                
+            }
+        }
+
+
+
+
+        private void SaveFile(string fileName, byte[] fileBytes)
+        {
+            _statusRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMinutes(1)
+            };
+            _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
+            _statusRefreshTimer.Start();
+        }
+
+
+        // ฟังก์ชันดึงข้อมูลผู้ใช้ทั้งหมด
         public async Task LoadUsers()
         {
             try
             {
                 // เรียกใช้ GetUserListAsync จาก HubConnection (ผู้ใช้ทั้งหมด)
                 var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListAsync");
-                // เรียกใช้ GetUserListWithChatHistoryAsync (ผู้ใช้ที่มีประวัติแชท)
-                var usersWithHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
-                // รวมผู้ใช้ทั้งหมดและผู้ใช้ที่มีประวัติแชท (หลีกเลี่ยงการซ้ำกัน)
-                var allUsers = users.Concat(usersWithHistory).DistinctBy(user => user.UserID).ToList();
-                // เคลียร์ข้อมูลใน ObservableCollection
-                Users.Clear();
-                // เพิ่มผู้ใช้ทั้งหมดใน Users
-                foreach (var user in allUsers)
+
+                // เคลียร์ข้อมูลในคอลเลกชัน usersWithoutHistory
+                usersWithoutHistory.Clear();
+
+                // เพิ่มผู้ใช้ทั้งหมดลงใน usersWithoutHistory
+                foreach (var user in users)
                 {
-                    Users.Add(user);
+                    usersWithoutHistory.Add(user);
                 }
-                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ทั้งหมด
-                GetUserList.ItemsSource = Users;
+
+                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่ไม่มีประวัติแชท
+                GetUserList.ItemsSource = usersWithoutHistory;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading user list: {ex.Message}");
+            }
+        }
+
+
+
+
+        // ฟังก์ชันดึงข้อมูลผู้ใช้ที่มีประวัติแชท
+        public async Task LoadUsersWithChatHistory()
+        {
+            try
+            {
+                if (_connection.State != HubConnectionState.Connected)
+                {
+                    await _connection.StartAsync();
+                }
+
+                // ดึงรายชื่อผู้ใช้ที่มีประวัติแชท
+                var usersWithChatHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
+
+                // เคลียร์ข้อมูลในคอลเลกชัน usersWithHistory
+                usersWithHistory.Clear();
+
+                // เพิ่มผู้ใช้ที่มีประวัติแชทลงใน usersWithHistory
+                foreach (var user in usersWithChatHistory)
+                {
+                    usersWithHistory.Add(user);
+                }
+
                 // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่มีประวัติแชท
                 GetUserListWithChatHistory.ItemsSource = usersWithHistory;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error loading user list: {ex.Message}");
+                MessageBox.Show($"Error loading users with chat history: {ex.Message}");
             }
         }
         private void MessageTextbox_TextChanged(object sender, TextChangedEventArgs e)
@@ -156,8 +230,6 @@ namespace Client
         private string selectedUserId; // ใช้ FullName แทน UserID
 
 
-       
-        
         public string TextMessage { get; set; } // สำหรับการพิมพ์ข้อความ
 
 
@@ -189,27 +261,41 @@ namespace Client
 
         private void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // Ensure that both collections are initialized
+            if (usersWithoutHistory == null || usersWithHistory == null)
+            {
+                MessageBox.Show("User lists are not initialized.");
+                return;
+            }
+
             if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
             {
+                // Check if the user is in the 'without history' list
+                if (usersWithoutHistory.Contains(selectedUser))
+                {
+                    
+                    usersWithHistory.Insert(0, selectedUser); 
+                    usersWithoutHistory.Remove(selectedUser); 
+                }
+
+                // Automatically switch to ChatsContent
+                ChatsRadioButton.IsChecked = true;
+
+                // Set the selected user details
                 selectedUserId = selectedUser.UserID;
                 selectedUserFullname = selectedUser.FullName;
 
-                // เปลี่ยนแท็บเป็น "Chats" อัตโนมัติเมื่อเลือกผู้ใช้
-                ChatsRadioButton.IsChecked = true;
-
-                // แสดงพื้นที่แชทและเตรียมพร้อมสำหรับการพิมพ์
+                // Show the chat area and clear the message textbox
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
 
-                // โหลดประวัติการแชทของผู้ใช้ที่เลือก
+                // Load the chat history for the selected user
                 LoadChatHistory(selectedUserId);
             }
-            else
-            {
-                selectedUserId = null;
-                selectedUserFullname = null;
-                Messages.Clear();
+        }
+
+
 
                 // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
                 IsChatVisible = false;
@@ -235,24 +321,29 @@ namespace Client
                 if (string.IsNullOrWhiteSpace(chatGuid))
                 {
                     MessageBox.Show("ไม่สามารถสร้างหรือดึง GUID สำหรับแชทได้");
-                    return;    
+                    return;
                 }
 
-                // ดึงประวัติการสนทนาโดยใช้ GUID ที่ได้รับมา
+                // ดึงประวัติการสนทนาโดยใช้ GUID ที่ได้มา
                 var chatHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetChatHistoryByGuid", chatGuid);
+
+                // ล้างข้อความเก่าออกก่อนโหลดข้อความใหม่
+                messagesList.Items.Clear();
 
                 if (chatHistory == null || !chatHistory.Any())
                 {
-                    MessageBox.Show("ไม่มีประวัติการสนทนาสำหรับผู้ใช้นี้");
+                    // ถ้าไม่มีประวัติการสนทนา ให้บันทึกข้อความว่างในฐานข้อมูลเพื่อสร้างบันทึกใหม่
+                    await _connection.InvokeAsync("SaveChatHistory", chatGuid, currentUserId, userId, selectedUserFullname, string.Empty, DateTime.Now);
+
+                    // แสดงข้อความเริ่มต้นว่าไม่มีประวัติ
+                    messagesList.Items.Clear();
                 }
                 else
                 {
-                    // ล้างข้อความเก่าก่อนโหลดข้อความใหม่
-                    messagesList.Items.Clear();
-
+                    // แสดงประวัติการสนทนาที่ดึงมาใน UI
                     foreach (var message in chatHistory)
                     {
-                        AddMessageToUI(message.Message); // แสดงข้อความแต่ละรายการใน UI
+                        AddMessageToUI(message.Message);
                     }
                 }
             }
@@ -262,27 +353,31 @@ namespace Client
             }
         }
 
+
+
+
         private void AddMessageToUI(string messageText)
         {
             if (string.IsNullOrEmpty(messageText))
             {
-              
+                // Don't add anything if the message is empty
                 return;
             }
 
             var textList = messageText.Split("#$");
             foreach (var addText in textList)
             {
-                // สร้างข้อความและแสดงใน ListBox
+                // Create message and display in ListBox
                 var messageControl = new Items.mymessage();
                 messageControl.DataContext = new ChatGetUserModel { Message = addText };
 
-                // เพิ่มข้อความใน ListBox
+                // Add message to ListBox
                 messagesList.Items.Add(messageControl);
             }
 
-            ScrollToBottom(); // เลื่อนแสดงข้อความล่าสุดที่ด้านล่าง
+            ScrollToBottom(); // Scroll to show the latest message at the bottom
         }
+
 
 
 
@@ -437,12 +532,18 @@ namespace Client
                     // ซ่อนพื้นที่แชทและล้างประวัติการแชท
                     IsChatVisible = false;
                     Messages.Clear();
+
+                    // ซ่อน ListBox ที่แสดงประวัติการแชท
+                    messagesList.Visibility = Visibility.Collapsed;
                 }
                 else if (radioButton == ChatsRadioButton)
                 {
                     // แสดง ChatsContent และซ่อน ListNameContent
                     ListNameContent.Visibility = Visibility.Collapsed;
                     ChatsContent.Visibility = Visibility.Visible;
+
+                    // แสดง ListBox ที่แสดงประวัติการแชท
+                    messagesList.Visibility = Visibility.Visible;
 
                     // โหลดประวัติการแชทเมื่อมีผู้ใช้ที่ถูกเลือกอยู่
                     if (!string.IsNullOrEmpty(selectedUserId))
@@ -453,11 +554,12 @@ namespace Client
                     else
                     {
                         IsChatVisible = false;
-                        Messages.Clear();
+                        Messages.Clear();  // ล้างข้อความถ้าผู้ใช้ยังไม่ได้เลือก
                     }
                 }
             }
         }
+
 
         private void RadioButton_Unchecked(object sender, RoutedEventArgs e)
         {

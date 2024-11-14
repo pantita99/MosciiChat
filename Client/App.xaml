@@ -120,7 +120,7 @@
                         <ControlTemplate TargetType="RadioButton">
                             <Border x:Name="Border" 
                         Background="{TemplateBinding Background}" 
-                        CornerRadius="10" Padding="25,10">
+                        CornerRadius="15" Padding="25,10">
                                 <!-- แทนที่ ContentPresenter ด้วย TextBlock -->
                                 <TextBlock x:Name="Text" Text="{TemplateBinding Content}" 
                                HorizontalAlignment="Center" 
@@ -134,7 +134,7 @@
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
                                     <Setter TargetName="Border" Property="Background" Value="Transparent"/>
-                                    <Setter TargetName="Text" Property="Foreground" Value="Black"/>
+                                    <Setter TargetName="Text" Property="Foreground" Value="#2c3d8f"/>
                                     <!-- เปลี่ยนสีตัวอักษรเมื่อไม่เลือก -->
                                 </Trigger>
                             </ControlTemplate.Triggers>
