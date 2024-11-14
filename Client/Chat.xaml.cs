@@ -31,26 +31,16 @@ namespace Client
         public ObservableCollection<ChatGetUserModel> usersWithHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
 
         public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-
-
-
-
+        private readonly string myUserID = "kong";
         public Chat()
         {
             InitializeComponent();
             InitializeSignalR();
-
             StartUserStatusRefresh();
-
             Messages = new ObservableCollection<ChatGetUserModel>();
             Users = new ObservableCollection<ChatGetUserModel>();
-
-            //messagesList.ItemsSource = Messages;
             GetUserList.ItemsSource = Users;
-            // Set ItemsSource of ListBox specifically for users with chat history
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
-
-
             UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
             DataContext = this;
         }
@@ -89,16 +79,6 @@ namespace Client
             _connection = new HubConnectionBuilder()
                 .WithUrl(url)
                 .Build();
-
-            // ตั้งค่าฟังก์ชันรับและแสดงข้อความใหม่
-            _connection.On<string, string>("ReceiveMessage", (user, message) =>
-            {
-                Dispatcher.Invoke(() =>
-                {
-                    AddMessageToUI(message); // แสดงข้อความใน UI ทันที
-                });
-            });
-
             try
             {
                 await _connection.StartAsync();
@@ -107,7 +87,7 @@ namespace Client
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error connecting: {ex.Message}");
+                
             }
         }
 
@@ -116,14 +96,12 @@ namespace Client
 
         private void SaveFile(string fileName, byte[] fileBytes)
         {
-            // กำหนด path สำหรับบันทึกไฟล์
-            var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName);
-
-            // บันทึกไฟล์ลงในระบบ
-            File.WriteAllBytes(savePath, fileBytes);
-
-            // แจ้งผู้ใช้ว่าไฟล์ถูกบันทึกเรียบร้อยแล้ว
-            MessageBox.Show($"File {fileName} saved at {savePath}");
+            _statusRefreshTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMinutes(1)
+            };
+            _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
+            _statusRefreshTimer.Start();
         }
 
 
@@ -132,12 +110,7 @@ namespace Client
         {
             try
             {
-                if (_connection.State != HubConnectionState.Connected)
-                {
-                    await _connection.StartAsync();
-                }
-
-                // ดึงรายชื่อผู้ใช้ทั้งหมด
+                // เรียกใช้ GetUserListAsync จาก HubConnection (ผู้ใช้ทั้งหมด)
                 var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListAsync");
 
                 // เคลียร์ข้อมูลในคอลเลกชัน usersWithoutHistory
@@ -191,6 +164,32 @@ namespace Client
                 MessageBox.Show($"Error loading users with chat history: {ex.Message}");
             }
         }
+        private void MessageTextbox_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var textBox = sender as System.Windows.Controls.TextBox;
+
+            // คำนวณความสูงของ TextBox ตามจำนวนบรรทัดที่มี
+
+            int lineCount = textBox.LineCount; // จำนวนบรรทัดที่มีอยู่
+            
+            IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
+            ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
+        }
+        private void SaveFile(string fileName, byte[] fileBytes)
+        {
+            // กำหนด path สำหรับบันทึกไฟล์
+            var savePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName);
+
+            // บันทึกไฟล์ลงในระบบ
+            File.WriteAllBytes(savePath, fileBytes);
+
+            // แจ้งผู้ใช้ว่าไฟล์ถูกบันทึกเรียบร้อยแล้ว
+            MessageBox.Show($"File {fileName} saved at {savePath}");
+        }
+
+
+
+        
 
 
 
@@ -294,30 +293,26 @@ namespace Client
 
 
 
-        // Chat.xaml.cs
-
-        private string GetCurrentUserId()
-        {
-            // ดำเนินการดึง ID ของผู้ใช้ปัจจุบัน
-            return "yourCurrentUserId"; // แทนที่ด้วยการดึง ID ผู้ใช้จริง
+                // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
+                IsChatVisible = false;
+                IsPlaceholderVisible = false;
+            }
         }
-
         private async void LoadChatHistory(string userId)
         {
             if (string.IsNullOrWhiteSpace(userId)) return;
 
             try
             {
-                var currentUserId = GetCurrentUserId();  // ดึงข้อมูล ID ของผู้ใช้ปัจจุบัน
 
-                if (string.IsNullOrWhiteSpace(currentUserId))
+                if (string.IsNullOrWhiteSpace(myUserID))
                 {
                     MessageBox.Show("ไม่สามารถดึงข้อมูลผู้ใช้ปัจจุบันได้");
                     return;
                 }
 
-                // ดึงหรือสร้าง GUID สำหรับแชทระหว่างผู้ใช้ปัจจุบันและผู้ใช้ที่เลือก
-                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", currentUserId, userId);
+                // ดึงหรือสร้าง GUID สำหรับการสนทนาระหว่างผู้ใช้ปัจจุบันและผู้ใช้ที่เลือก
+                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, userId);
 
                 if (string.IsNullOrWhiteSpace(chatGuid))
                 {
@@ -452,15 +447,13 @@ namespace Client
                     MessageBox.Show("Connection to the server is not established.");
                     return;
                 }
-
-                var currentUserId = "yourCurrentUserId";  // Replace with actual current user ID logic
-                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", currentUserId, selectedUserId);
+                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, selectedUserId);
 
                 // Add the new message to the UI before sending to the server
                 AddMessageToUI(messageText);
 
                 // Send the message to the server to be saved
-                await _connection.InvokeAsync("SaveChatHistory", chatGuid, currentUserId, selectedUserId, selectedUserFullname, messageText, null);
+                await _connection.InvokeAsync("SaveChatHistory", chatGuid, myUserID, selectedUserId, selectedUserFullname, messageText, null);
 
                 messageTextbox.Text = string.Empty; // Clear the input box
             }
