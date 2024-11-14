@@ -271,13 +271,9 @@ namespace Client
 
             if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
             {
-                // Check if the user is in the 'without history' list
-                if (usersWithoutHistory.Contains(selectedUser))
-                {
-                    
-                    usersWithHistory.Insert(0, selectedUser); 
-                    usersWithoutHistory.Remove(selectedUser); 
-                }
+                // Move the selected user from the "without history" list to the "with history" list
+                usersWithHistory.Add(selectedUser);
+                usersWithoutHistory.Remove(selectedUser);
 
                 // Automatically switch to ChatsContent
                 ChatsRadioButton.IsChecked = true;
@@ -295,7 +291,6 @@ namespace Client
                 LoadChatHistory(selectedUserId);
             }
         }
-
 
 
 
