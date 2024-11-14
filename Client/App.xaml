@@ -134,7 +134,7 @@
                                 </Trigger>
                                 <Trigger Property="IsChecked" Value="False">
                                     <Setter TargetName="Border" Property="Background" Value="Transparent"/>
-                                    <Setter TargetName="Text" Property="Foreground" Value="Black"/>
+                                    <Setter TargetName="Text" Property="Foreground" Value="#2c3d8f"/>
                                     <!-- เปลี่ยนสีตัวอักษรเมื่อไม่เลือก -->
                                 </Trigger>
                             </ControlTemplate.Triggers>

@@ -25,6 +25,11 @@ namespace Client
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
         private Dictionary<string, ObservableCollection<ChatGetUserModel>> userChatHistories = new Dictionary<string, ObservableCollection<ChatGetUserModel>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
+
+
+        public ObservableCollection<ChatGetUserModel> usersWithoutHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
+        public ObservableCollection<ChatGetUserModel> usersWithHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
+
         public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
 
 
@@ -78,31 +83,34 @@ namespace Client
 
 
 
+
         private async void InitializeSignalR()
         {
             _connection = new HubConnectionBuilder()
                 .WithUrl(url)
                 .Build();
 
-            // Receive and display new messages
+            // ตั้งค่าฟังก์ชันรับและแสดงข้อความใหม่
             _connection.On<string, string>("ReceiveMessage", (user, message) =>
             {
                 Dispatcher.Invoke(() =>
                 {
-                    AddMessageToUI(message);  // Ensure new messages are displayed immediately
+                    AddMessageToUI(message); // แสดงข้อความใน UI ทันที
                 });
             });
 
             try
             {
                 await _connection.StartAsync();
-                await LoadUsers();
+                await LoadUsers();              // โหลดผู้ใช้ทั้งหมด
+                await LoadUsersWithChatHistory(); // โหลดผู้ใช้ที่มีประวัติแชท
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error connecting: {ex.Message}");
             }
         }
+
 
 
 
@@ -119,7 +127,7 @@ namespace Client
         }
 
 
-
+        // ฟังก์ชันดึงข้อมูลผู้ใช้ทั้งหมด
         public async Task LoadUsers()
         {
             try
@@ -129,29 +137,20 @@ namespace Client
                     await _connection.StartAsync();
                 }
 
-                // เรียกใช้ GetUserListAsync จาก HubConnection (ผู้ใช้ทั้งหมด)
+                // ดึงรายชื่อผู้ใช้ทั้งหมด
                 var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListAsync");
 
-                // เรียกใช้ GetUserListWithChatHistoryAsync (ผู้ใช้ที่มีประวัติแชท)
-                var usersWithHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
+                // เคลียร์ข้อมูลในคอลเลกชัน usersWithoutHistory
+                usersWithoutHistory.Clear();
 
-                // รวมผู้ใช้ทั้งหมดและผู้ใช้ที่มีประวัติแชท (หลีกเลี่ยงการซ้ำกัน)
-                var allUsers = users.Concat(usersWithHistory).DistinctBy(user => user.UserID).ToList();
-
-                // เคลียร์ข้อมูลใน ObservableCollection
-                Users.Clear();
-
-                // เพิ่มผู้ใช้ทั้งหมดใน Users
-                foreach (var user in allUsers)
+                // เพิ่มผู้ใช้ทั้งหมดลงใน usersWithoutHistory
+                foreach (var user in users)
                 {
-                    Users.Add(user);
+                    usersWithoutHistory.Add(user);
                 }
 
-                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ทั้งหมด
-                GetUserList.ItemsSource = Users;
-
-                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่มีประวัติแชท
-                GetUserListWithChatHistory.ItemsSource = usersWithHistory;
+                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่ไม่มีประวัติแชท
+                GetUserList.ItemsSource = usersWithoutHistory;
             }
             catch (Exception ex)
             {
@@ -159,7 +158,41 @@ namespace Client
             }
         }
 
-         
+
+
+
+        // ฟังก์ชันดึงข้อมูลผู้ใช้ที่มีประวัติแชท
+        public async Task LoadUsersWithChatHistory()
+        {
+            try
+            {
+                if (_connection.State != HubConnectionState.Connected)
+                {
+                    await _connection.StartAsync();
+                }
+
+                // ดึงรายชื่อผู้ใช้ที่มีประวัติแชท
+                var usersWithChatHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
+
+                // เคลียร์ข้อมูลในคอลเลกชัน usersWithHistory
+                usersWithHistory.Clear();
+
+                // เพิ่มผู้ใช้ที่มีประวัติแชทลงใน usersWithHistory
+                foreach (var user in usersWithChatHistory)
+                {
+                    usersWithHistory.Add(user);
+                }
+
+                // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่มีประวัติแชท
+                GetUserListWithChatHistory.ItemsSource = usersWithHistory;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading users with chat history: {ex.Message}");
+            }
+        }
+
+
 
         private void GetUserListWithChatHistory_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
@@ -198,8 +231,6 @@ namespace Client
         private string selectedUserId; // ใช้ FullName แทน UserID
 
 
-       
-        
         public string TextMessage { get; set; } // สำหรับการพิมพ์ข้อความ
 
 
@@ -231,33 +262,42 @@ namespace Client
 
         private void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            // Ensure that both collections are initialized
+            if (usersWithoutHistory == null || usersWithHistory == null)
+            {
+                MessageBox.Show("User lists are not initialized.");
+                return;
+            }
+
             if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
             {
+                // Check if the user is in the 'without history' list
+                if (usersWithoutHistory.Contains(selectedUser))
+                {
+                    
+                    usersWithHistory.Insert(0, selectedUser); 
+                    usersWithoutHistory.Remove(selectedUser); 
+                }
+
+                // Automatically switch to ChatsContent
+                ChatsRadioButton.IsChecked = true;
+
+                // Set the selected user details
                 selectedUserId = selectedUser.UserID;
                 selectedUserFullname = selectedUser.FullName;
 
-                // เปลี่ยนแท็บเป็น "Chats" อัตโนมัติเมื่อเลือกผู้ใช้
-                ChatsRadioButton.IsChecked = true;
-
-                // แสดงพื้นที่แชทและเตรียมพร้อมสำหรับการพิมพ์
+                // Show the chat area and clear the message textbox
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
 
-                // โหลดประวัติการแชทของผู้ใช้ที่เลือก
+                // Load the chat history for the selected user
                 LoadChatHistory(selectedUserId);
             }
-            else
-            {
-                selectedUserId = null;
-                selectedUserFullname = null;
-                Messages.Clear();
-
-                // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
-                IsChatVisible = false;
-                IsPlaceholderVisible = false;
-            }
         }
+
+
+
 
         // Chat.xaml.cs
 
