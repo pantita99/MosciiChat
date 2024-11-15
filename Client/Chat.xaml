@@ -19,6 +19,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiBoolToVisibilityConverter x:Key="MultiBoolToVis" />
+       
 
     </Window.Resources>
 
@@ -236,7 +237,7 @@
                         </ListBox>
                     </Grid>
 
-                    <Grid x:Name="ChatsContent" Visibility="Visible" Grid.Row="1">
+                    <Grid x:Name="ChatsContent" Visibility="Collapsed" Grid.Row="1">
                         <ListBox x:Name="GetUserListWithChatHistory" Background="Transparent" 
                                  ItemsSource="{Binding usersWithHistory}" 
                                  ScrollViewer.HorizontalScrollBarVisibility="Disabled"

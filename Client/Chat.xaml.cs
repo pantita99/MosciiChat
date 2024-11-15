@@ -49,6 +49,7 @@ namespace Client
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
             UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
             DataContext = this;
+          
         }
         private async void InitializeSignalR()
         {
@@ -191,25 +192,34 @@ namespace Client
 
             if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
             {
-                               
-
-                // Automatically switch to ChatsContent
-                ChatsRadioButton.IsChecked = true;
-
-                // Set the selected user details
+                // ตั้งค่าผู้ใช้ที่เลือก
                 selectedUserId = selectedUser.UserID;
                 selectedUserFullname = selectedUser.FullName;
 
-                // Show the chat area and clear the message textbox
+                // ตั้งค่าให้เลือกผู้ใช้เดียวกันใน ChatsContent
+                if (usersWithHistory != null)
+                {
+                    var selectedChatUser = usersWithHistory.FirstOrDefault(user => user.UserID == selectedUserId);
+                    if (selectedChatUser != null)
+                    {
+                        // เลือกผู้ใช้ใน ChatsContent
+                        GetUserListWithChatHistory.SelectedItem = selectedChatUser;
+                    }
+                }
+
+                // ซ่อน/แสดงพื้นที่แชท
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
 
-                // Load the chat history for the selected user
+                // แสดง ChatsContent
+                ChatsRadioButton.IsChecked = true;
+
+                // โหลดประวัติการแชทสำหรับผู้ใช้ที่เลือก
                 LoadChatHistory(selectedUserId);
             }
             // ซ่อนพื้นที่แชทเมื่อไม่มีการเลือกผู้ใช้
-            
+
         }
         private async void LoadChatHistory(string userId)
         {
@@ -400,11 +410,13 @@ namespace Client
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
             if (ListNameContent == null || ChatsContent == null) return; 
+
             if (sender == ListNameRadioButton)
             {
                 // แสดง ListNameContent และซ่อน ChatsContent
                 ListNameContent.Visibility = Visibility.Visible;
                 ChatsContent.Visibility = Visibility.Collapsed;
+
                 // ซ่อนพื้นที่แชทและล้างประวัติการแชท
                 IsChatVisible = false;
                 Messages.Clear();
