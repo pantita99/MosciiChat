@@ -28,7 +28,7 @@ public class ChatHub : Hub
                 return;  // หยุดการทำงานหากข้อความเป็นว่าง
             }
 
-            var receiverUser = await _context.TB_AUTHENTICATIONs.FirstOrDefaultAsync(u => u.FullName == receiverFullName);
+            var receiverUser = await _context.TB_AUTHENTICATION.FirstOrDefaultAsync(u => u.FullName == receiverFullName);
             if (receiverUser == null)
             {
                 await Clients.Caller.SendAsync("ReceiveMessage", "System", $"User '{receiverFullName}' does not exist.");
@@ -90,7 +90,7 @@ public class ChatHub : Hub
         }
 
         // ตรวจสอบว่าเคยมีการสนทนาหรือไม่
-        var existingChat = await _context.TB_CHATHISTRies
+        var existingChat = await _context.TB_CHATHISTRY
             .FirstOrDefaultAsync(chat => (chat.ID == senderId.ToString() && chat.IDRECIVER == receiverId) ||
                                          (chat.ID == receiverId && chat.IDRECIVER == senderId.ToString()));
 
@@ -107,7 +107,7 @@ public class ChatHub : Hub
             FILENAME = fileName
         };
 
-        _context.TB_CHATHISTRies.Add(chatEntry);
+        _context.TB_CHATHISTRY.Add(chatEntry);
         await _context.SaveChangesAsync();
 
         // ส่งไฟล์ไปยังผู้รับ
@@ -124,7 +124,7 @@ public class ChatHub : Hub
                 throw new ArgumentException("User IDs cannot be null or empty.");
             }
 
-            var chatHistory = await _context.TB_CHATHISTRies
+            var chatHistory = await _context.TB_CHATHISTRY
                 .Where(chat => (chat.ID == userId1 && chat.IDRECIVER == userId2) ||
                                (chat.ID == userId2 && chat.IDRECIVER == userId1))
                 .OrderBy(chat => chat.GUID)  // เรียงตาม GUID
@@ -146,7 +146,6 @@ public class ChatHub : Hub
             return new List<ChatGetUserModel>();
         }
     }
-
     // ฟังก์ชันแสดงประวัติการสนทนาโดย GUID
     public async Task<List<ChatGetUserModel>> GetChatHistoryByGuid(string guid)
     {
@@ -154,10 +153,9 @@ public class ChatHub : Hub
         {
             throw new HubException("The GUID cannot be null or empty.");
         }
-
         try
         {
-            var chatHistory = await _context.TB_CHATHISTRies
+            var chatHistory = await _context.TB_CHATHISTRY
                 .Where(chat => chat.GUID == guid)
                 .ToListAsync();
 
@@ -175,24 +173,19 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving chat history by GUID.");
         }
     }
-
-
-    // ดึงรายชื่อผู้ใช้
-
-    // แก้ไข GetUserList ให้เป็นฟังก์ชัน (method)
-    public async Task<List<ChatGetUserModel>> GetUserList()
+    public List<ChatGetUserModel> GetUserList(string myUserID)
     {
         try
         {
-            var users = await _context.TB_AUTHENTICATIONs
+            var users = _context.TB_AUTHENTICATION
+                .Where(auth => auth.UserID != myUserID)
                 .Select(auth => new ChatGetUserModel
                 {
                     UserID = auth.UserID.ToString(),
                     FullName = auth.FullName,
                     UserConnected = auth.UserConnected,
                 })
-                .ToListAsync();
-
+                .ToList();
             return users;
         }
         catch (Exception ex)
@@ -201,15 +194,13 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving the user list.");
         }
     }
-
-
     public async Task<List<ChatGetUserModel>> GetUserListWithChatHistoryAsync()
     {
         try
         {
             // ดึงข้อมูลผู้ใช้ที่มีประวัติแชท
-            var usersWithHistory = await _context.TB_AUTHENTICATIONs
-                .Where(auth => _context.TB_CHATHISTRies
+            var usersWithHistory = await _context.TB_AUTHENTICATION
+                .Where(auth => _context.TB_CHATHISTRY
                     .Any(chat => chat.ID == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
                 .Select(auth => new ChatGetUserModel
                 {
@@ -239,7 +230,7 @@ public class ChatHub : Hub
         try
         {
             // ค้นหาประวัติแชทที่มี GUID, senderId, receiverId
-            var existingChat = await _context.TB_CHATHISTRies
+            var existingChat = await _context.TB_CHATHISTRY
                 .FirstOrDefaultAsync(chat => chat.GUID == guid && chat.ID == senderId && chat.IDRECIVER == receiverId);
 
             if (existingChat != null)
@@ -250,12 +241,12 @@ public class ChatHub : Hub
                     existingChat.MESSAGE += string.IsNullOrEmpty(existingChat.MESSAGE) ? message : "#$" + message;
                 }
                 existingChat.FILENAME = filename;  // อัปเดตไฟล์แนบ
-                _context.TB_CHATHISTRies.Update(existingChat);
+                _context.TB_CHATHISTRY.Update(existingChat);
             }
             else
             {
                 // ตรวจสอบว่าแชทระหว่าง senderId และ receiverId มี GUID หรือไม่
-                var chatWithSameIds = await _context.TB_CHATHISTRies
+                var chatWithSameIds = await _context.TB_CHATHISTRY
                     .FirstOrDefaultAsync(chat => chat.ID == senderId && chat.IDRECIVER == receiverId);
 
                 if (chatWithSameIds != null)
@@ -265,7 +256,7 @@ public class ChatHub : Hub
                     {
                         chatWithSameIds.MESSAGE += string.IsNullOrEmpty(chatWithSameIds.MESSAGE) ? message : "#$" + message;
                     }
-                    _context.TB_CHATHISTRies.Update(chatWithSameIds);
+                    _context.TB_CHATHISTRY.Update(chatWithSameIds);
                 }
                 else
                 {
@@ -280,7 +271,7 @@ public class ChatHub : Hub
                         FILENAME = filename
                     };
 
-                    await _context.TB_CHATHISTRies.AddAsync(newChat);
+                    await _context.TB_CHATHISTRY.AddAsync(newChat);
                 }
             }
 
@@ -302,7 +293,7 @@ public class ChatHub : Hub
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
     {
         // Look for an existing GUID for the chat between sender and receiver
-        var existingChat = await _context.TB_CHATHISTRies
+        var existingChat = await _context.TB_CHATHISTRY
             .Where(c => (c.ID == senderId && c.IDRECIVER == receiverId) || (c.ID == receiverId && c.IDRECIVER == senderId))
             .Select(c => c.GUID)
             .FirstOrDefaultAsync();

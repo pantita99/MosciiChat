@@ -4,22 +4,21 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
-
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Win32;
 using Client.Models;
-using RadioButton = System.Windows.Controls.RadioButton; // Alias for RadioButton
 
 namespace Client
 {
     public partial class Chat : Window
     {
+        private readonly string myUserID = "kong";
         private HubConnection _connection;
         private DispatcherTimer _statusRefreshTimer;
-        private readonly string url = "https://localhost:7277/chatHub";
+        private readonly string url = "https://localhost:7070/chatHub";
         public ObservableCollection<ChatGetUserModel> Messages { get; set; }
         public ObservableCollection<ChatGetUserModel> Users { get; set; }
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
@@ -28,7 +27,6 @@ namespace Client
         public ObservableCollection<ChatGetUserModel> usersWithoutHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
         public ObservableCollection<ChatGetUserModel> usersWithHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
         public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-        private readonly string myUserID = "Wha";
         public static readonly DependencyProperty IsPlaceholderVisibleProperty = DependencyProperty.Register("IsPlaceholderVisible", typeof(bool), typeof(Chat), new PropertyMetadata(true));
         private string selectedUserFullname;
         private string selectedUserId; // ใช้ FullName แทน UserID
@@ -79,12 +77,12 @@ namespace Client
         }
         private void StartUserStatusRefresh()
         {
-            _statusRefreshTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(1)
-            };
-            _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
-            _statusRefreshTimer.Start();
+            //_statusRefreshTimer = new DispatcherTimer
+            //{
+            //    Interval = TimeSpan.FromMinutes(1)
+            //};
+            //_statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
+            //_statusRefreshTimer.Start();
         }
         // ฟังก์ชันดึงข้อมูลผู้ใช้ทั้งหมด
         public async Task LoadUsers()
@@ -92,7 +90,7 @@ namespace Client
             try
             {
                 // เรียกใช้ GetUserList จาก HubConnection (ผู้ใช้ทั้งหมด)
-                var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserList");
+                var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserList", myUserID);
                 // เคลียร์ข้อมูลในคอลเลกชัน usersWithoutHistory
                 usersWithoutHistory.Clear();
                 // เพิ่มผู้ใช้ทั้งหมดลงใน usersWithoutHistory
@@ -402,14 +400,14 @@ namespace Client
             if (ListNameContent == null || ChatsContent == null) return; 
             if (sender == ListNameRadioButton)
             {
-                // แสดง ListNameContent และซ่อน ChatsContent
+                //// แสดง ListNameContent และซ่อน ChatsContent
                 ListNameContent.Visibility = Visibility.Visible;
                 ChatsContent.Visibility = Visibility.Collapsed;
-                // ซ่อนพื้นที่แชทและล้างประวัติการแชท
-                IsChatVisible = false;
-                Messages.Clear();
-                // ซ่อน ListBox ที่แสดงประวัติการแชท
-                messagesList.Visibility = Visibility.Collapsed;
+                //// ซ่อนพื้นที่แชทและล้างประวัติการแชท
+                //IsChatVisible = false;
+                //Messages.Clear();
+                //// ซ่อน ListBox ที่แสดงประวัติการแชท
+                //messagesList.Visibility = Visibility.Collapsed;
             }
             else if (sender == ChatsRadioButton)
             {

@@ -13,9 +13,9 @@ public partial class StarCat_Context : DbContext
     {
     }
 
-    public virtual DbSet<TB_AUTHENTICATION> TB_AUTHENTICATIONs { get; set; }
+    public virtual DbSet<TB_AUTHENTICATION> TB_AUTHENTICATION { get; set; }
 
-    public virtual DbSet<TB_CHATHISTRY> TB_CHATHISTRies { get; set; }
+    public virtual DbSet<TB_CHATHISTRY> TB_CHATHISTRY { get; set; }
 
     public virtual DbSet<TB_USER> TB_USERs { get; set; }
 

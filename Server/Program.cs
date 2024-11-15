@@ -7,7 +7,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Load configuration from appsettings.json
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5050); // HTTP
+    options.ListenAnyIP(7070, listenOptions => listenOptions.UseHttps()); // HTTPS
+});
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -70,7 +74,7 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
