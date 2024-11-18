@@ -20,8 +20,8 @@ namespace Client
         private DispatcherTimer _statusRefreshTimer;
         private readonly string url = "https://localhost:7277/chatHub";
         //private readonly string url = "http://192.168.3.91:5050/chatHub";
-        public ObservableCollection<ChatGetUserModel> Messages { get; set; }
-        public ObservableCollection<ChatGetUserModel> Users { get; set; }
+        public ObservableCollection<GetUserHistory> Messages { get; set; }
+        public ObservableCollection<GetUserHistory> Users { get; set; }
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
         private Dictionary<string, ObservableCollection<GetUser>> userChatHistories = new Dictionary<string, ObservableCollection<GetUser>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
@@ -42,8 +42,8 @@ namespace Client
             InitializeComponent();
             InitializeSignalR();
             StartUserStatusRefresh();
-            Messages = new ObservableCollection<GetUser>();
-            Users = new ObservableCollection<GetUser>();
+            Messages = new ObservableCollection<GetUserHistory>();
+            Users = new ObservableCollection<GetUserHistory>();
             GetUserList.ItemsSource = Users;
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
             UsersWithChatHistory = new ObservableCollection<GetUser>();
@@ -117,10 +117,10 @@ namespace Client
                 // เคลียร์ข้อมูลในคอลเลกชัน usersWithHistory
                 usersWithHistory.Clear();
                 // เพิ่มผู้ใช้ที่มีประวัติแชทลงใน usersWithHistory
-                foreach (var user in usersWithChatHistory)
-                {
-                    usersWithHistory.Add(user);
-                }
+                //foreach (var user in usersWithChatHistory)
+                //{
+                //    usersWithHistory.Add(user);
+                //}
                 // ตั้งค่า ItemsSource ของ ListBox สำหรับผู้ใช้ที่มีประวัติแชท
                 GetUserListWithChatHistory.ItemsSource = usersWithHistory;
             }
@@ -242,7 +242,7 @@ namespace Client
                 }
 
                 // ดึงประวัติการสนทนาโดยใช้ GUID ที่ได้มา
-                var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid", chatGuid);
+                var chatHistory = await _connection.InvokeAsync<List<GetUserHistory>>("GetChatHistoryByGuid", chatGuid);
 
                 // ล้างข้อความเก่าออกก่อนโหลดข้อความใหม่
                 messagesList.Items.Clear();
@@ -260,7 +260,7 @@ namespace Client
                     // แสดงประวัติการสนทนาที่ดึงมาใน UI
                     foreach (var message in chatHistory)
                     {
-                        AddMessageToUI(message.Message);
+                        AddMessageToUI(message.MESSAGEHISTORY);
                     }
                 }
             }
@@ -282,7 +282,7 @@ namespace Client
             {
                 // Create message and display in ListBox
                 var messageControl = new Items.mymessage();
-                messageControl.DataContext = new GetUser { Message = addText };
+                messageControl.DataContext = new GetUserHistory { MESSAGEHISTORY = addText };
 
                 // Add message to ListBox
                 messagesList.Items.Add(messageControl);

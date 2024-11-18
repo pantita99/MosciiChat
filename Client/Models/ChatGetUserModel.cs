@@ -2,7 +2,7 @@
 
 namespace Client.Models
 {
-    public class GetUser
+    public class GetUser //Autehn
     {
         //[JsonProperty("userID")] // กำหนดให้ JSON ใช้ชื่อ userID
         public string UserID { get; set; }
@@ -12,7 +12,7 @@ namespace Client.Models
         //public string Message { get; set; }
         //public string DisplayStatus => UserConnected.HasValue ? (UserConnected.Value ? "Online" : "Offline") : "Unknown";
     }
-    public class GetUserHistory
+    public class GetUserHistory //chatHistory
     { 
         public Guid GUID { get; set; }
         public string IDSENDER { get; set; }
