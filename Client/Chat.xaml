@@ -16,10 +16,13 @@
         Height="490" 
         Width="940"
         MouseDown="UserControl_MouseDown">
+
+   
+
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiBoolToVisibilityConverter x:Key="MultiBoolToVis" />
-       
+   
 
     </Window.Resources>
 
@@ -304,7 +307,7 @@
 
 
         <!-- Right side: Chat area -->
-        <Border CornerRadius="15" Background="#FFFFFF" BorderBrush="Transparent"
+        <Border CornerRadius="20" Background="#FFFFFF" BorderBrush="Transparent"
             Grid.Column="1" Margin="10,55,30,20" Grid.ColumnSpan="2" Grid.RowSpan="2" BorderThickness="1">
             <Border.Effect>
                 <DropShadowEffect Color="#A8B9D6" BlurRadius="15" ShadowDepth="2" Opacity="0.15"/>
@@ -323,7 +326,7 @@
                 </Grid.ColumnDefinitions>
 
                 <!-- Messages area -->
-                <Border CornerRadius="20" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
+                <Border CornerRadius="10" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
                     <ScrollViewer x:Name="messagesScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ListBox x:Name="messagesList" Padding="5,10,5,0" HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
                      IsHitTestVisible="False" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" />
@@ -338,37 +341,20 @@
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock VerticalAlignment="Bottom" 
-                                   Foreground="#868686" 
-                                   FontSize="13" 
-                                   Text="Type her."
-                                   Margin="35,0,0,26">
-                            <TextBlock.Visibility>
-                                <MultiBinding Converter="{StaticResource MultiBoolToVis}">
-                                    <Binding Path="IsChatVisible" />
-                                    <Binding Path="IsPlaceholderVisible" />
-                                </MultiBinding>
-                            </TextBlock.Visibility>
-                        </TextBlock>
+                        <TextBlock VerticalAlignment="Bottom" Foreground="#868686" FontSize="13"
+                                    Text="Type a message..."
+                                    Visibility="{Binding ElementName=messageTextbox, Path=Text.IsEmpty, Converter={StaticResource BoolToVis}}"
+                                    Margin="35,0,0,26" 
+/>
+                        <TextBox x:Name="messageTextbox" Style="{StaticResource messageTextbox}"   
+                                  Background="Transparent" TextWrapping="Wrap" AcceptsReturn="True"
+                                  VerticalScrollBarVisibility="Hidden" Text="{Binding TextMessage, UpdateSourceTrigger=PropertyChanged}"
+                                  VerticalAlignment="Bottom" Margin="20,10,20,10" MaxHeight="100" MinHeight="40"
+                                  TextChanged="MessageTextbox_TextChanged"
+                                  Visibility="{Binding IsChatVisible, Converter={StaticResource BoolToVis}}"/>
 
 
-
-                        <!-- TextBox สำหรับพิมพ์ข้อความ -->
-                        <TextBox x:Name="messageTextbox" 
-                                     Style="{StaticResource messageTextbox}"   
-                                     Background="#f8f9fd" 
-                                     TextWrapping="Wrap" 
-                                     AcceptsReturn="True"
-                                     VerticalScrollBarVisibility="Hidden" 
-                                     Text="{Binding TextMessage, UpdateSourceTrigger=PropertyChanged}"
-                                     VerticalAlignment="Bottom" 
-                                     Margin="20,10,20,10" 
-                                     MaxHeight="100" 
-                                     MinHeight="40"
-                                     TextChanged="MessageTextbox_TextChanged"
-                                     Visibility="{Binding IsChatVisible, Converter={StaticResource BoolToVis}}" />
-
-
+                      
 
                         <!-- Send Button -->
                         <Button x:Name="Send" 

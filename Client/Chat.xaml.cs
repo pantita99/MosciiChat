@@ -20,6 +20,7 @@ namespace Client
         private HubConnection _connection;
         private DispatcherTimer _statusRefreshTimer;
         private readonly string url = "https://localhost:7277/chatHub";
+        //private readonly string url = "http://192.168.3.91:5050/chatHub";
         public ObservableCollection<ChatGetUserModel> Messages { get; set; }
         public ObservableCollection<ChatGetUserModel> Users { get; set; }
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
@@ -74,7 +75,7 @@ namespace Client
             // คำนวณความสูงของ TextBox ตามจำนวนบรรทัดที่มี
 
             int lineCount = textBox.LineCount; // จำนวนบรรทัดที่มีอยู่
-            
+
             IsPlaceholderVisible = string.IsNullOrEmpty(textBox.Text);  // ซ่อนหรือแสดง placeholder
             ScrollToBottom(); // เลื่อน scroll ไปที่ข้อความล่าสุด
         }
