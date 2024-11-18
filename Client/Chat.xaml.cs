@@ -4,19 +4,18 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Threading.Tasks;
-
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Win32;
 using Client.Models;
-using RadioButton = System.Windows.Controls.RadioButton; // Alias for RadioButton
 
 namespace Client
 {
     public partial class Chat : Window
     {
+        private readonly string myUserID = "kong";
         private HubConnection _connection;
         private DispatcherTimer _statusRefreshTimer;
         private readonly string url = "https://localhost:7277/chatHub";
@@ -24,12 +23,11 @@ namespace Client
         public ObservableCollection<ChatGetUserModel> Messages { get; set; }
         public ObservableCollection<ChatGetUserModel> Users { get; set; }
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
-        private Dictionary<string, ObservableCollection<ChatGetUserModel>> userChatHistories = new Dictionary<string, ObservableCollection<ChatGetUserModel>>();
+        private Dictionary<string, ObservableCollection<GetUser>> userChatHistories = new Dictionary<string, ObservableCollection<GetUser>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
-        public ObservableCollection<ChatGetUserModel> usersWithoutHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-        public ObservableCollection<ChatGetUserModel> usersWithHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-        public ObservableCollection<ChatGetUserModel> UsersWithChatHistory { get; set; } = new ObservableCollection<ChatGetUserModel>();
-        private readonly string myUserID = "Wha";
+        public ObservableCollection<GetUser> usersWithoutHistory { get; set; } = new ObservableCollection<GetUser>();
+        public ObservableCollection<GetUser> usersWithHistory { get; set; } = new ObservableCollection<GetUser>();
+        public ObservableCollection<GetUser> UsersWithChatHistory { get; set; } = new ObservableCollection<GetUser>();
         public static readonly DependencyProperty IsPlaceholderVisibleProperty = DependencyProperty.Register("IsPlaceholderVisible", typeof(bool), typeof(Chat), new PropertyMetadata(true));
         private string selectedUserFullname;
         private string selectedUserId; // ใช้ FullName แทน UserID
@@ -44,13 +42,12 @@ namespace Client
             InitializeComponent();
             InitializeSignalR();
             StartUserStatusRefresh();
-            Messages = new ObservableCollection<ChatGetUserModel>();
-            Users = new ObservableCollection<ChatGetUserModel>();
+            Messages = new ObservableCollection<GetUser>();
+            Users = new ObservableCollection<GetUser>();
             GetUserList.ItemsSource = Users;
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
-            UsersWithChatHistory = new ObservableCollection<ChatGetUserModel>();
+            UsersWithChatHistory = new ObservableCollection<GetUser>();
             DataContext = this;
-          
         }
         private async void InitializeSignalR()
         {
@@ -81,12 +78,12 @@ namespace Client
         }
         private void StartUserStatusRefresh()
         {
-            _statusRefreshTimer = new DispatcherTimer
-            {
-                Interval = TimeSpan.FromMinutes(1)
-            };
-            _statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
-            _statusRefreshTimer.Start();
+            //_statusRefreshTimer = new DispatcherTimer
+            //{
+            //    Interval = TimeSpan.FromMinutes(1)
+            //};
+            //_statusRefreshTimer.Tick += async (sender, e) => await LoadUsers();
+            //_statusRefreshTimer.Start();
         }
         // ฟังก์ชันดึงข้อมูลผู้ใช้ทั้งหมด
         public async Task LoadUsers()
@@ -94,7 +91,7 @@ namespace Client
             try
             {
                 // เรียกใช้ GetUserList จาก HubConnection (ผู้ใช้ทั้งหมด)
-                var users = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserList");
+                var users = await _connection.InvokeAsync<List<GetUser>>("GetUserList", myUserID);
                 // เคลียร์ข้อมูลในคอลเลกชัน usersWithoutHistory
                 usersWithoutHistory.Clear();
                 // เพิ่มผู้ใช้ทั้งหมดลงใน usersWithoutHistory
@@ -116,7 +113,7 @@ namespace Client
             try
             {
                 // ดึงรายชื่อผู้ใช้ที่มีประวัติแชท
-                var usersWithChatHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetUserListWithChatHistoryAsync");
+                var usersWithChatHistory = await _connection.InvokeAsync<List<GetUserHistory>>("GetUserListWithChatHistory");
                 // เคลียร์ข้อมูลในคอลเลกชัน usersWithHistory
                 usersWithHistory.Clear();
                 // เพิ่มผู้ใช้ที่มีประวัติแชทลงใน usersWithHistory
@@ -145,7 +142,7 @@ namespace Client
         }
         private void GetUserListWithChatHistory_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (GetUserListWithChatHistory.SelectedItem is ChatGetUserModel selectedUserWithHistory)
+            if (GetUserListWithChatHistory.SelectedItem is GetUser selectedUserWithHistory)
             {
                 selectedUserId = selectedUserWithHistory.UserID;
                 selectedUserFullname = selectedUserWithHistory.FullName;
@@ -191,7 +188,7 @@ namespace Client
                 return;
             }
 
-            if (GetUserList.SelectedItem is ChatGetUserModel selectedUser)
+            if (GetUserList.SelectedItem is GetUser selectedUser)
             {
                 // ตั้งค่าผู้ใช้ที่เลือก
                 selectedUserId = selectedUser.UserID;
@@ -245,7 +242,7 @@ namespace Client
                 }
 
                 // ดึงประวัติการสนทนาโดยใช้ GUID ที่ได้มา
-                var chatHistory = await _connection.InvokeAsync<List<ChatGetUserModel>>("GetChatHistoryByGuid", chatGuid);
+                var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid", chatGuid);
 
                 // ล้างข้อความเก่าออกก่อนโหลดข้อความใหม่
                 messagesList.Items.Clear();
@@ -285,7 +282,7 @@ namespace Client
             {
                 // Create message and display in ListBox
                 var messageControl = new Items.mymessage();
-                messageControl.DataContext = new ChatGetUserModel { Message = addText };
+                messageControl.DataContext = new GetUser { Message = addText };
 
                 // Add message to ListBox
                 messagesList.Items.Add(messageControl);
@@ -414,7 +411,7 @@ namespace Client
 
             if (sender == ListNameRadioButton)
             {
-                // แสดง ListNameContent และซ่อน ChatsContent
+                //// แสดง ListNameContent และซ่อน ChatsContent
                 ListNameContent.Visibility = Visibility.Visible;
                 ChatsContent.Visibility = Visibility.Collapsed;
 
