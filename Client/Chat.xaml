@@ -22,7 +22,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiBoolToVisibilityConverter x:Key="MultiBoolToVis" />
-   
+
 
     </Window.Resources>
 
@@ -342,10 +342,17 @@
                         </Grid.ColumnDefinitions>
 
                         <TextBlock VerticalAlignment="Bottom" Foreground="#868686" FontSize="13"
-                                    Text="Type a message..."
-                                    Visibility="{Binding ElementName=messageTextbox, Path=Text.IsEmpty, Converter={StaticResource BoolToVis}}"
-                                    Margin="35,0,0,26" 
-/>
+                                   Text="Type a message..."
+                                   Margin="35,0,0,26">
+                            <TextBlock.Visibility>
+                                <MultiBinding Converter="{StaticResource MultiBoolToVis}">
+                                    <Binding ElementName="messageTextbox" Path="Text.IsEmpty" />
+                                    <Binding Path="IsChatVisible" />
+                                </MultiBinding>
+                            </TextBlock.Visibility>
+                        </TextBlock>
+
+
                         <TextBox x:Name="messageTextbox" Style="{StaticResource messageTextbox}"   
                                   Background="Transparent" TextWrapping="Wrap" AcceptsReturn="True"
                                   VerticalScrollBarVisibility="Hidden" Text="{Binding TextMessage, UpdateSourceTrigger=PropertyChanged}"

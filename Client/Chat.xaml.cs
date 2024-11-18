@@ -15,10 +15,10 @@ namespace Client
 {
     public partial class Chat : Window
     {
-        private readonly string myUserID = "kong";
+        private readonly string myUserID = "wha";
         private HubConnection _connection;
         private DispatcherTimer _statusRefreshTimer;
-        private readonly string url = "https://localhost:7277/chatHub";
+        private readonly string url = "http://localhost:5050/chatHub";
         //private readonly string url = "http://192.168.3.91:5050/chatHub";
         public ObservableCollection<GetUserHistory> Messages { get; set; }
         public ObservableCollection<GetUserHistory> Users { get; set; }
