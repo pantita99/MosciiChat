@@ -115,7 +115,7 @@ public class ChatHub : Hub
     }
 
     // ฟังก์ชันดึงประวัติการสนทนา
-    public async Task<List<ChatGetUserModel>> GetChatHistory(string userId1, string userId2)
+    public async Task<List<GetUser>> GetChatHistory(string userId1, string userId2)
     {
         try
         {
@@ -130,7 +130,7 @@ public class ChatHub : Hub
                 .OrderBy(chat => chat.GUID)  // เรียงตาม GUID
                 .ToListAsync();
 
-            var chatMessages = chatHistory.Select(chat => new ChatGetUserModel
+            var chatMessages = chatHistory.Select(chat => new GetUser
             {
                 UserID = chat.ID,
                 FullName = chat.NAME,
@@ -143,11 +143,11 @@ public class ChatHub : Hub
         catch (Exception ex)
         {
             Console.WriteLine($"Error in GetChatHistory: {ex.Message}");
-            return new List<ChatGetUserModel>();
+            return new List<GetUser>();
         }
     }
     // ฟังก์ชันแสดงประวัติการสนทนาโดย GUID
-    public async Task<List<ChatGetUserModel>> GetChatHistoryByGuid(string guid)
+    public async Task<List<GetUser>> GetChatHistoryByGuid(string guid)
     {
         if (string.IsNullOrEmpty(guid))
         {
@@ -159,7 +159,7 @@ public class ChatHub : Hub
                 .Where(chat => chat.GUID == guid)
                 .ToListAsync();
 
-            return chatHistory.Select(chat => new ChatGetUserModel
+            return chatHistory.Select(chat => new GetUser
             {
                 UserID = chat.ID,
                 FullName = chat.NAME,
@@ -173,13 +173,13 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving chat history by GUID.");
         }
     }
-    public List<ChatGetUserModel> GetUserList(string myUserID)
+    public List<GetUser> GetUserList(string myUserID)
     {
         try
         {
             var users = _context.TB_AUTHENTICATION
                 .Where(auth => auth.UserID != myUserID)
-                .Select(auth => new ChatGetUserModel
+                .Select(auth => new GetUser
                 {
                     UserID = auth.UserID.ToString(),
                     FullName = auth.FullName,
@@ -194,15 +194,16 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving the user list.");
         }
     }
-    public async Task<List<ChatGetUserModel>> GetUserListWithChatHistoryAsync()
+    public async Task<List<GetUser>> GetUserListWithChatHistory()
     {
         try
         {
+
             // ดึงข้อมูลผู้ใช้ที่มีประวัติแชท
             var usersWithHistory = await _context.TB_AUTHENTICATION
                 .Where(auth => _context.TB_CHATHISTRY
                     .Any(chat => chat.ID == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
-                .Select(auth => new ChatGetUserModel
+                .Select(auth => new GetUser
                 {
                     UserID = auth.UserID.ToString(),
                     FullName = auth.FullName,
@@ -304,7 +305,7 @@ public class ChatHub : Hub
 
 
     // โมเดลข้อมูลผู้ใช้
-    public class ChatGetUserModel
+    public class GetUser
     {
         public string UserID { get; set; }
         public string FullName { get; set; }
