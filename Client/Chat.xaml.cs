@@ -229,7 +229,7 @@ namespace Client
                     return;
                 }
 
-                var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid", chatGuid);
+                var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid","001","adgem");
 
                 messagesList.Items.Clear();
 

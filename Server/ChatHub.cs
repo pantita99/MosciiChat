@@ -85,6 +85,7 @@ public class ChatHub : Hub
             IDSENDER = senderId.ToString(),
             IDRECIVER = receiverIdInt.ToString(),
             MESSAGE = "[File Sent]",
+            NAMEDRECIVER = Context.User.Identity.Name,
             FULLNAMESENDER = Context.User.Identity.Name,
             FILENAME = fileName
         };
@@ -93,74 +94,72 @@ public class ChatHub : Hub
 
         await Clients.User(receiverId).SendAsync("ReceiveFile", fileName, fileBytes);
     }
-    public async Task<List<GetUser>> GetChatHistory(string userId1, string userId2)
+    public async Task<List<GetUser>> GetChatHistory(string SenderId, string ReceiverId)
     {
         try
         {
-            if (string.IsNullOrEmpty(userId1) || string.IsNullOrEmpty(userId2))
-            {
-                throw new ArgumentException("User IDs cannot be null or empty.");
-            }
-
-            // ดึงข้อมูลแชทที่เกี่ยวข้องกับผู้ใช้สองคน
+            
             var chatHistory = await _context.TB_CHATHISTRY
-                .Where(chat => (chat.IDSENDER == userId1 && chat.IDRECIVER == userId2) ||
-                               (chat.IDSENDER == userId2 && chat.IDRECIVER == userId1))
-                .OrderBy(chat => chat.GUID) // เรียงตาม GUID หรือเวลาส่ง
-                .ToListAsync();
+                .Where(chat =>
+                    (chat.IDSENDER == SenderId && chat.IDRECIVER == ReceiverId) ||
+                    (chat.IDSENDER == ReceiverId && chat.IDRECIVER == SenderId))
+                .OrderBy(chat => chat.GUID) // หรือใช้ฟิลด์ที่ระบุเวลาส่งข้อความ
+                .Select(chat => new GetUser
+                {
+                    SenderId = chat.IDSENDER,
+                    ReceiverId = chat.IDRECIVER,
+                    Message = chat.MESSAGE,
 
-            // แปลงข้อมูลจาก TB_CHATHISTRY เป็น GetUser
-            var chatMessages = chatHistory.Select(chat => new GetUser
-            {
-                UserID = chat.IDSENDER,
-                FullName = chat.FULLNAMESENDER,
-                Message = chat.MESSAGE,
-                Filename = chat.FILENAME,
-                BackgroundColor = chat.COLOR,
-                IsSender = chat.IDSENDER == userId1 // ตรวจสอบว่าเป็นข้อความที่ผู้ใช้ส่งออกไปหรือไม่
-            }).ToList();
+                    BackgroundColor = chat.COLOR
+                  
+                })
+            .ToListAsync();
 
-            return chatMessages;
+            return chatHistory;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in GetChatHistory: {ex.Message}");
-            return new List<GetUser>();
+            Console.WriteLine($"Error in GetCombinedChatHistory: {ex.Message}");
+            throw new HubException("An unexpected error occurred while retrieving chat history.");
         }
+        
     }
 
 
-    public async Task<List<GetUser>> GetChatHistoryByGuid(string guid)
+    public async Task<List<GetUser>> GetChatHistoryByGuid(string senderId, string receiverId)
     {
-        if (string.IsNullOrEmpty(guid))
-        {
-            throw new HubException("The GUID cannot be null or empty.");
-        }
-
         try
         {
+            if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(receiverId))
+            {
+                throw new ArgumentException("SenderId และ ReceiverId ไม่สามารถเป็นค่าว่างได้");
+            }
+
+            // ดึงประวัติแชทระหว่าง SenderId และ ReceiverId
             var chatHistory = await _context.TB_CHATHISTRY
-                .Where(chat => chat.GUID == guid)
-                .OrderBy(chat => chat.IDSENDER)
+                .Where(chat => (chat.IDSENDER == senderId && chat.IDRECIVER == receiverId) ||
+                               (chat.IDSENDER == receiverId && chat.IDRECIVER == senderId))
                 .ToListAsync();
 
+            // แปลงข้อมูลเป็นรูปแบบที่ต้องการ
             return chatHistory.Select(chat => new GetUser
             {
                 SenderId = chat.IDSENDER,
                 ReceiverId = chat.IDRECIVER,
-                UserID = chat.IDSENDER,
-                FullName = chat.FULLNAMESENDER,
+                UserID = chat.IDSENDER, // หรือ chat.IDRECIVER ตามความเหมาะสม
+                FullName = chat.NAMEDRECIVER, // ปรับให้ตรงตามคอลัมน์จริงในตาราง
                 Message = chat.MESSAGE,
                 Filename = chat.FILENAME,
-                BackgroundColor = chat.COLOR // ส่งคืนสีพื้นหลัง
+                BackgroundColor = chat.COLOR
             }).ToList();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in GetChatHistoryByGuid: {ex.Message}");
-            throw new HubException("An error occurred while retrieving chat history by GUID.");
+            Console.WriteLine($"Error in GetChatHistory: {ex.Message}");
+            throw new HubException("An error occurred while retrieving chat history.");
         }
     }
+
 
 
     public List<GetUser> GetUserList(string myUserID)
@@ -266,6 +265,7 @@ public class ChatHub : Hub
                         GUID = guid,
                         IDSENDER = senderId,
                         IDRECIVER = receiverId,
+                        NAMEDRECIVER = name,
                         FULLNAMESENDER = name,
                         MESSAGE = string.IsNullOrWhiteSpace(message) ? null : message,
                         FILENAME = filename,
@@ -292,14 +292,11 @@ public class ChatHub : Hub
     }
 
 
-
-
-
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
     {
         string guid = string.Empty;
         try 
-        {
+        { 
             var existingChat = await _context.TB_CHATHISTRY.FirstOrDefaultAsync(x => x.IDSENDER == senderId && x.IDRECIVER == receiverId);
             if (existingChat == null)
             {
@@ -320,7 +317,6 @@ public class ChatHub : Hub
 
 
 
-
     public class GetUser
     {
         public string UserID { get; set; }
@@ -331,6 +327,6 @@ public class ChatHub : Hub
         public string SenderId { get; set; }    // รหัสผู้ส่งข้อความ
         public string ReceiverId { get; set; }  // รหัสผู้รับข้อความ
         public string BackgroundColor { get; set; }
-        public bool IsSender { get; set; }
+       
     }
 }
