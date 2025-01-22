@@ -244,7 +244,7 @@ namespace Client
                             .Where(part => !string.IsNullOrWhiteSpace(part)) // ลบส่วนที่ว่างเปล่า
                             .ToList();
 
-                        var isOwnMessage = message.SenderId == myUserID;
+                        var isOwnMessage = message.Filename == myUserID;
 
                         foreach (var part in messageParts)
                         {

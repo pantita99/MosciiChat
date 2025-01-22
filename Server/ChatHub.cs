@@ -74,18 +74,18 @@ public class ChatHub : Hub
             throw new ArgumentException("Invalid sender or receiver ID.");
         }
         var existingChat = await _context.TB_CHATHISTRY
-            .FirstOrDefaultAsync(chat => (chat.ID == senderId.ToString() && chat.IDRECIVER == receiverId) ||
-                                         (chat.ID == receiverId && chat.IDRECIVER == senderId.ToString()));
+            .FirstOrDefaultAsync(chat => (chat.IDSENDER == senderId.ToString() && chat.IDRECIVER == receiverId) ||
+                                         (chat.IDSENDER == receiverId && chat.IDRECIVER == senderId.ToString()));
 
         var chatGuid = existingChat?.GUID ?? Guid.NewGuid().ToString();
 
         var chatEntry = new TB_CHATHISTRY
         {
             GUID = chatGuid,
-            ID = senderId.ToString(),
+            IDSENDER = senderId.ToString(),
             IDRECIVER = receiverIdInt.ToString(),
             MESSAGE = "[File Sent]",
-            NAME = Context.User.Identity.Name,
+            FULLNAMESENDER = Context.User.Identity.Name,
             FILENAME = fileName
         };
         _context.TB_CHATHISTRY.Add(chatEntry);
@@ -104,20 +104,20 @@ public class ChatHub : Hub
 
             // ดึงข้อมูลแชทที่เกี่ยวข้องกับผู้ใช้สองคน
             var chatHistory = await _context.TB_CHATHISTRY
-                .Where(chat => (chat.ID == userId1 && chat.IDRECIVER == userId2) ||
-                               (chat.ID == userId2 && chat.IDRECIVER == userId1))
+                .Where(chat => (chat.IDSENDER == userId1 && chat.IDRECIVER == userId2) ||
+                               (chat.IDSENDER == userId2 && chat.IDRECIVER == userId1))
                 .OrderBy(chat => chat.GUID) // เรียงตาม GUID หรือเวลาส่ง
                 .ToListAsync();
 
             // แปลงข้อมูลจาก TB_CHATHISTRY เป็น GetUser
             var chatMessages = chatHistory.Select(chat => new GetUser
             {
-                UserID = chat.ID,
-                FullName = chat.NAME,
+                UserID = chat.IDSENDER,
+                FullName = chat.FULLNAMESENDER,
                 Message = chat.MESSAGE,
                 Filename = chat.FILENAME,
-                BackgroundColor = chat.Color,
-                IsSender = chat.ID == userId1 // ตรวจสอบว่าเป็นข้อความที่ผู้ใช้ส่งออกไปหรือไม่
+                BackgroundColor = chat.COLOR,
+                IsSender = chat.IDSENDER == userId1 // ตรวจสอบว่าเป็นข้อความที่ผู้ใช้ส่งออกไปหรือไม่
             }).ToList();
 
             return chatMessages;
@@ -141,18 +141,18 @@ public class ChatHub : Hub
         {
             var chatHistory = await _context.TB_CHATHISTRY
                 .Where(chat => chat.GUID == guid)
-                .OrderBy(chat => chat.ID)
+                .OrderBy(chat => chat.IDSENDER)
                 .ToListAsync();
 
             return chatHistory.Select(chat => new GetUser
             {
-                SenderId = chat.ID,
+                SenderId = chat.IDSENDER,
                 ReceiverId = chat.IDRECIVER,
-                UserID = chat.ID,
-                FullName = chat.NAME,
+                UserID = chat.IDSENDER,
+                FullName = chat.FULLNAMESENDER,
                 Message = chat.MESSAGE,
                 Filename = chat.FILENAME,
-                BackgroundColor = chat.Color // ส่งคืนสีพื้นหลัง
+                BackgroundColor = chat.COLOR // ส่งคืนสีพื้นหลัง
             }).ToList();
         }
         catch (Exception ex)
@@ -167,8 +167,7 @@ public class ChatHub : Hub
     {
         try
         {
-            var users = _context.TB_AUTHENTICATION
-                .Where(auth => auth.UserID != myUserID)
+            var users = _context.TB_AUTHENTICATION.Where(auth => auth.UserID != myUserID)
                 .Select(auth => new GetUser
                 {
                     UserID = auth.UserID.ToString(),
@@ -190,7 +189,7 @@ public class ChatHub : Hub
         {
             var usersWithHistory = await _context.TB_AUTHENTICATION
                 .Where(auth => _context.TB_CHATHISTRY
-                    .Any(chat => chat.ID == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
+                    .Any(chat => chat.IDSENDER == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
                 .Select(auth => new GetUser
                 {
                     UserID = auth.UserID.ToString(),
@@ -219,7 +218,7 @@ public class ChatHub : Hub
         {
             // ตรวจสอบแชทที่มีอยู่ระหว่าง senderId, receiverId, และ GUID
             var existingChat = await _context.TB_CHATHISTRY
-                .FirstOrDefaultAsync(chat => chat.GUID == guid && chat.ID == senderId && chat.IDRECIVER == receiverId);
+                .FirstOrDefaultAsync(chat => chat.GUID == guid && chat.IDSENDER == senderId && chat.IDRECIVER == receiverId);
 
             if (existingChat != null)
             {
@@ -234,7 +233,7 @@ public class ChatHub : Hub
 
                 // อัปเดตไฟล์และสีพื้นหลัง
                 existingChat.FILENAME = filename;
-                existingChat.Color = backgroundColor;
+                existingChat.COLOR = backgroundColor;
 
                 _context.TB_CHATHISTRY.Update(existingChat); // อัปเดตแชทที่มีอยู่
             }
@@ -242,7 +241,7 @@ public class ChatHub : Hub
             {
                 // ถ้าไม่พบแชทที่ตรงกัน ให้ตรวจสอบการแชทระหว่าง senderId และ receiverId
                 var chatWithSameIds = await _context.TB_CHATHISTRY
-                    .FirstOrDefaultAsync(chat => chat.ID == senderId && chat.IDRECIVER == receiverId);
+                    .FirstOrDefaultAsync(chat => chat.IDSENDER == senderId && chat.IDRECIVER == receiverId);
 
                 if (chatWithSameIds != null)
                 {
@@ -255,7 +254,7 @@ public class ChatHub : Hub
                     }
 
                     chatWithSameIds.FILENAME = filename;
-                    chatWithSameIds.Color = backgroundColor;
+                    chatWithSameIds.COLOR = backgroundColor;
 
                     _context.TB_CHATHISTRY.Update(chatWithSameIds); // อัปเดตแชทที่มีอยู่
                 }
@@ -265,12 +264,12 @@ public class ChatHub : Hub
                     var newChat = new TB_CHATHISTRY
                     {
                         GUID = guid,
-                        ID = senderId,
+                        IDSENDER = senderId,
                         IDRECIVER = receiverId,
-                        NAME = name,
+                        FULLNAMESENDER = name,
                         MESSAGE = string.IsNullOrWhiteSpace(message) ? null : message,
                         FILENAME = filename,
-                        Color = backgroundColor
+                        COLOR = backgroundColor
                     };
 
                     await _context.TB_CHATHISTRY.AddAsync(newChat); // เพิ่มแชทใหม่
@@ -298,16 +297,24 @@ public class ChatHub : Hub
 
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
     {
-
-        // ตรวจสอบแชทที่มีอยู่ในฐานข้อมูล
-        var existingChat = await _context.TB_CHATHISTRY
-            .Where(c => (c.ID == senderId && c.IDRECIVER == receiverId) ||
-                        (c.ID == receiverId && c.IDRECIVER == senderId))
-            .Select(c => c.GUID)
-            .FirstOrDefaultAsync();
-
-        // คืนค่า GUID ที่มีอยู่ หรือสร้าง GUID ใหม่ถ้าไม่พบแชท
-        return existingChat ?? Guid.NewGuid().ToString();
+        string guid = string.Empty;
+        try 
+        {
+            var existingChat = await _context.TB_CHATHISTRY.FirstOrDefaultAsync(x => x.IDSENDER == senderId && x.IDRECIVER == receiverId);
+            if (existingChat == null)
+            {
+                return guid = Guid.NewGuid().ToString();
+            }
+            else 
+            {
+                return existingChat.GUID;
+            }
+        }
+        catch(Exception ex) 
+        {
+        
+        }
+        return guid;
     }
 
 

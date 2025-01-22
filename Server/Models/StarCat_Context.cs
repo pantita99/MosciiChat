@@ -8,6 +8,10 @@ namespace Server.Models;
 
 public partial class StarCat_Context : DbContext
 {
+    public StarCat_Context() 
+    {
+    
+    }
     public StarCat_Context(DbContextOptions<StarCat_Context> options)
         : base(options)
     {
