@@ -72,4 +72,12 @@ public partial class TB_USER
     public string ManagerLevel { get; set; }
 
     public string SecondaryDeputy { get; set; }
+
+    public string LineID { get; set; }
+
+    public long? FK_BUILDING { get; set; }
+
+    public long? FK_FLOOR { get; set; }
+
+    public long? FK_ROOM { get; set; }
 }

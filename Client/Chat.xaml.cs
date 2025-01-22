@@ -197,13 +197,11 @@ namespace Client
                 selectedUserId = selectedUser.UserID;
                 selectedUserFullname = selectedUser.FullName;
 
-
                 if (usersWithHistory != null)
                 {
                     var selectedChatUser = usersWithHistory.FirstOrDefault(user => user.UserID == selectedUserId);
                     if (selectedChatUser != null)
                     {
-
                         GetUserListWithChatHistory.SelectedItem = selectedChatUser;
                     }
                 }
@@ -211,11 +209,7 @@ namespace Client
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
-
-
                 ChatsRadioButton.IsChecked = true;
-
-
                 LoadChatHistory(selectedUserId);
             }
 

@@ -4,7 +4,6 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace Server.Models;
 
 public partial class StarCat_Context : DbContext
@@ -32,23 +31,15 @@ public partial class StarCat_Context : DbContext
 
             entity.Property(e => e.UserID).HasMaxLength(50);
             entity.Property(e => e.CheckSum).HasMaxLength(50);
-            entity.Property(e => e.DEP_Name).HasMaxLength(50);
-            entity.Property(e => e.Description).HasMaxLength(100);
-            entity.Property(e => e.DivisionName).HasMaxLength(50);
             entity.Property(e => e.EXT1).HasMaxLength(255);
             entity.Property(e => e.EXT1_FULLNAME).HasMaxLength(255);
             entity.Property(e => e.Email).HasMaxLength(100);
             entity.Property(e => e.Ext).HasMaxLength(100);
-            entity.Property(e => e.FullName).HasMaxLength(50);
             entity.Property(e => e.JOBFUNCTION).HasMaxLength(100);
-            entity.Property(e => e.LOCATION_Name).HasMaxLength(50);
             entity.Property(e => e.MobilePhone).HasMaxLength(50);
             entity.Property(e => e.OrgId).HasMaxLength(40);
-            entity.Property(e => e.OrgName).HasMaxLength(50);
             entity.Property(e => e.Password).HasMaxLength(50);
             entity.Property(e => e.Phone).HasMaxLength(50);
-            entity.Property(e => e.SectionName).HasMaxLength(50);
-            entity.Property(e => e.SubSectionName).HasMaxLength(50);
             entity.Property(e => e.SupportGroupID).HasMaxLength(40);
         });
 
@@ -59,11 +50,13 @@ public partial class StarCat_Context : DbContext
             entity.ToTable("TB_CHATHISTRY");
 
             entity.Property(e => e.GUID).HasMaxLength(50);
+            entity.Property(e => e.COLOR).HasMaxLength(7);
             entity.Property(e => e.FILENAME).HasMaxLength(50);
-            entity.Property(e => e.ID).HasMaxLength(50);
+            entity.Property(e => e.FULLNAMESENDER).HasMaxLength(50);
             entity.Property(e => e.IDRECIVER).HasMaxLength(50);
+            entity.Property(e => e.IDSENDER).HasMaxLength(50);
             entity.Property(e => e.MESSAGE).HasMaxLength(50);
-            entity.Property(e => e.NAME).HasMaxLength(50);
+            entity.Property(e => e.NAMEDRECIVER).HasMaxLength(50);
         });
 
         modelBuilder.Entity<TB_USER>(entity =>
@@ -90,6 +83,7 @@ public partial class StarCat_Context : DbContext
             entity.Property(e => e.IMAGE).HasColumnType("image");
             entity.Property(e => e.JOBFUNCTION).HasMaxLength(1000);
             entity.Property(e => e.LASTNAME).HasMaxLength(50);
+            entity.Property(e => e.LineID).HasMaxLength(100);
             entity.Property(e => e.ManagerLavel).HasMaxLength(100);
             entity.Property(e => e.ManagerLevel).HasMaxLength(100);
             entity.Property(e => e.ManagerUserID).HasMaxLength(100);

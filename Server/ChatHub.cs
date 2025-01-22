@@ -297,30 +297,21 @@ public class ChatHub : Hub
 
 
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
-{
-    if (string.IsNullOrWhiteSpace(senderId) || string.IsNullOrWhiteSpace(receiverId))
     {
-        throw new ArgumentException("Sender ID and Receiver ID cannot be null or empty.");
+
+        // ตรวจสอบแชทที่มีอยู่ในฐานข้อมูล
+        var existingChat = await _context.TB_CHATHISTRY
+            .Where(c => (c.ID == senderId && c.IDRECIVER == receiverId) ||
+                        (c.ID == receiverId && c.IDRECIVER == senderId))
+            .Select(c => c.GUID)
+            .FirstOrDefaultAsync();
+
+        // คืนค่า GUID ที่มีอยู่ หรือสร้าง GUID ใหม่ถ้าไม่พบแชท
+        return existingChat ?? Guid.NewGuid().ToString();
     }
 
-    if (senderId == receiverId)
-    {
-        throw new ArgumentException("Sender ID and Receiver ID cannot be the same.");
-    }
-
-    // ตรวจสอบแชทที่มีอยู่ในฐานข้อมูล
-    var existingChat = await _context.TB_CHATHISTRY
-        .Where(c => (c.ID == senderId && c.IDRECIVER == receiverId) || 
-                    (c.ID == receiverId && c.IDRECIVER == senderId))
-        .Select(c => c.GUID)
-        .FirstOrDefaultAsync();
-
-    // คืนค่า GUID ที่มีอยู่ หรือสร้าง GUID ใหม่ถ้าไม่พบแชท
-    return existingChat ?? Guid.NewGuid().ToString();
-}
 
 
-    
 
 
     public class GetUser

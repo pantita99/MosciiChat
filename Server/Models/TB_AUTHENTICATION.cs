@@ -35,6 +35,10 @@ public partial class TB_AUTHENTICATION
 
     public bool? RoleAdmin { get; set; }
 
+    public bool? RoleHelpdesk { get; set; }
+
+    public bool? RoleAsset { get; set; }
+
     public string OrgName { get; set; }
 
     public string DEP_Name { get; set; }
@@ -84,4 +88,16 @@ public partial class TB_AUTHENTICATION
     public bool? manageScript { get; set; }
 
     public bool? ISDELETED { get; set; }
+
+    public int? SECTION_ID { get; set; }
+
+    public int? SUBSECTION_ID { get; set; }
+
+    public int? DIV_ID { get; set; }
+
+    public long? FK_BUILDING { get; set; }
+
+    public long? FK_FLOOR { get; set; }
+
+    public long? FK_ROOM { get; set; }
 }
