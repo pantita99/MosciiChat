@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace Server.Models;
 
 public partial class StarCat_Context : DbContext

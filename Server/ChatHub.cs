@@ -10,24 +10,19 @@ public class ChatHub : Hub
 {
     private readonly StarCat_Context _context;
 
-    // Constructor that injects the StarCat_Context
     public ChatHub(StarCat_Context context)
     {
         _context = context;
     }
-
-    // ฟังก์ชันสำหรับส่งข้อความ
     public async Task SendMessage(string senderFullName, string receiverFullName, string messageText)
     {
         try
         {
-            // ตรวจสอบว่า messageText ไม่เป็น null หรือว่าง
             if (string.IsNullOrEmpty(messageText))
             {
                 await Clients.Caller.SendAsync("ReceiveMessage", "System", "Cannot send an empty message.");
-                return;  // หยุดการทำงานหากข้อความเป็นว่าง
+                return;
             }
-
             var receiverUser = await _context.TB_AUTHENTICATION.FirstOrDefaultAsync(u => u.FullName == receiverFullName);
             if (receiverUser == null)
             {
@@ -48,14 +43,10 @@ public class ChatHub : Hub
                 await Clients.Caller.SendAsync("ReceiveMessage", "System", "Receiver User ID is not available");
                 return;
             }
-
-            // สร้างหรือดึง GUID สำหรับแชท
             var chatGuid = await GetOrCreateChatGuid(senderId.ToString(), receiverId);
 
-            // บันทึกประวัติการแชท (กรณีที่ไม่มีประวัติการแชท จะบันทึกเป็นข้อความว่าง)
             await SaveChatHistory(chatGuid, senderId.ToString(), receiverId, senderFullName, messageText);
 
-            // ส่งข้อความไปยังผู้รับและผู้ส่ง
             await Clients.User(receiverId).SendAsync("ReceiveMessage", senderFullName, messageText);
             await Clients.Caller.SendAsync("ReceiveMessage", senderFullName, messageText);
         }
@@ -64,18 +55,12 @@ public class ChatHub : Hub
             await Clients.Caller.SendAsync("ReceiveMessage", "System", $"Error sending message: {ex.Message}");
         }
     }
-
-
-
-
     private int GetCurrentUserId()
     {
-        // สมมติว่าคุณเก็บ User ID ไว้ใน Context
+
         var userId = Context.User?.FindFirst("UserID")?.Value;
         return int.TryParse(userId, out var id) ? id : 0;
     }
-
-    // ฟังก์ชันสำหรับการส่งไฟล์
     public async Task SendFile(string receiverId, string fileName, byte[] fileBytes)
     {
         var userId = Context.UserIdentifier;
@@ -88,33 +73,26 @@ public class ChatHub : Hub
         {
             throw new ArgumentException("Invalid sender or receiver ID.");
         }
-
-        // ตรวจสอบว่าเคยมีการสนทนาหรือไม่
         var existingChat = await _context.TB_CHATHISTRY
             .FirstOrDefaultAsync(chat => (chat.ID == senderId.ToString() && chat.IDRECIVER == receiverId) ||
                                          (chat.ID == receiverId && chat.IDRECIVER == senderId.ToString()));
 
-        // ใช้ GUID เดิมหากมีประวัติการสนทนาแล้ว
         var chatGuid = existingChat?.GUID ?? Guid.NewGuid().ToString();
 
         var chatEntry = new TB_CHATHISTRY
         {
-            GUID = chatGuid,  // ใช้ GUID เดิม
+            GUID = chatGuid,
             ID = senderId.ToString(),
             IDRECIVER = receiverIdInt.ToString(),
             MESSAGE = "[File Sent]",
             NAME = Context.User.Identity.Name,
             FILENAME = fileName
         };
-
         _context.TB_CHATHISTRY.Add(chatEntry);
         await _context.SaveChangesAsync();
 
-        // ส่งไฟล์ไปยังผู้รับ
         await Clients.User(receiverId).SendAsync("ReceiveFile", fileName, fileBytes);
     }
-
-    // ฟังก์ชันดึงประวัติการสนทนา
     public async Task<List<GetUser>> GetChatHistory(string userId1, string userId2)
     {
         try
@@ -124,18 +102,22 @@ public class ChatHub : Hub
                 throw new ArgumentException("User IDs cannot be null or empty.");
             }
 
+            // ดึงข้อมูลแชทที่เกี่ยวข้องกับผู้ใช้สองคน
             var chatHistory = await _context.TB_CHATHISTRY
                 .Where(chat => (chat.ID == userId1 && chat.IDRECIVER == userId2) ||
                                (chat.ID == userId2 && chat.IDRECIVER == userId1))
-                .OrderBy(chat => chat.GUID)  // เรียงตาม GUID
+                .OrderBy(chat => chat.GUID) // เรียงตาม GUID หรือเวลาส่ง
                 .ToListAsync();
 
+            // แปลงข้อมูลจาก TB_CHATHISTRY เป็น GetUser
             var chatMessages = chatHistory.Select(chat => new GetUser
             {
                 UserID = chat.ID,
                 FullName = chat.NAME,
                 Message = chat.MESSAGE,
-                Filename = chat.FILENAME
+                Filename = chat.FILENAME,
+                BackgroundColor = chat.Color,
+                IsSender = chat.ID == userId1 // ตรวจสอบว่าเป็นข้อความที่ผู้ใช้ส่งออกไปหรือไม่
             }).ToList();
 
             return chatMessages;
@@ -146,25 +128,31 @@ public class ChatHub : Hub
             return new List<GetUser>();
         }
     }
-    // ฟังก์ชันแสดงประวัติการสนทนาโดย GUID
+
+
     public async Task<List<GetUser>> GetChatHistoryByGuid(string guid)
     {
         if (string.IsNullOrEmpty(guid))
         {
             throw new HubException("The GUID cannot be null or empty.");
         }
+
         try
         {
             var chatHistory = await _context.TB_CHATHISTRY
                 .Where(chat => chat.GUID == guid)
+                .OrderBy(chat => chat.ID)
                 .ToListAsync();
 
             return chatHistory.Select(chat => new GetUser
             {
+                SenderId = chat.ID,
+                ReceiverId = chat.IDRECIVER,
                 UserID = chat.ID,
                 FullName = chat.NAME,
                 Message = chat.MESSAGE,
-                Filename = chat.FILENAME
+                Filename = chat.FILENAME,
+                BackgroundColor = chat.Color // ส่งคืนสีพื้นหลัง
             }).ToList();
         }
         catch (Exception ex)
@@ -173,6 +161,8 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving chat history by GUID.");
         }
     }
+
+
     public List<GetUser> GetUserList(string myUserID)
     {
         try
@@ -198,8 +188,6 @@ public class ChatHub : Hub
     {
         try
         {
-
-            // ดึงข้อมูลผู้ใช้ที่มีประวัติแชท
             var usersWithHistory = await _context.TB_AUTHENTICATION
                 .Where(auth => _context.TB_CHATHISTRY
                     .Any(chat => chat.ID == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
@@ -215,13 +203,12 @@ public class ChatHub : Hub
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error in GetUserListWithChatHistoryAsync: {ex.Message}");
+            Console.WriteLine($"Error in GetUserListWithChatHistory: {ex.Message}");
             throw new HubException("An error occurred while retrieving users with chat history.");
         }
     }
 
-
-    public async Task SaveChatHistory(string guid, string senderId, string receiverId, string name, string message, string filename = null)
+    public async Task SaveChatHistory(string guid, string senderId, string receiverId, string name, string message, string filename = null, string backgroundColor = null)
     {
         if (string.IsNullOrWhiteSpace(guid) || string.IsNullOrWhiteSpace(senderId) || string.IsNullOrWhiteSpace(receiverId))
         {
@@ -230,87 +217,122 @@ public class ChatHub : Hub
 
         try
         {
-            // ค้นหาประวัติแชทที่มี GUID, senderId, receiverId
+            // ตรวจสอบแชทที่มีอยู่ระหว่าง senderId, receiverId, และ GUID
             var existingChat = await _context.TB_CHATHISTRY
                 .FirstOrDefaultAsync(chat => chat.GUID == guid && chat.ID == senderId && chat.IDRECIVER == receiverId);
 
             if (existingChat != null)
             {
-                // อัปเดตข้อความที่มีอยู่ โดยไม่ใช้การต่อข้อความยาวเกินไป
+                // หากพบแชทที่ตรงกันแล้ว
                 if (!string.IsNullOrWhiteSpace(message))
                 {
-                    existingChat.MESSAGE += string.IsNullOrEmpty(existingChat.MESSAGE) ? message : "#$" + message;
+                    // เพิ่มข้อความใหม่ไปที่แชท
+                    existingChat.MESSAGE += string.IsNullOrEmpty(existingChat.MESSAGE)
+                        ? message
+                        : "#$" + message; // เชื่อมข้อความใหม่
                 }
-                existingChat.FILENAME = filename;  // อัปเดตไฟล์แนบ
-                _context.TB_CHATHISTRY.Update(existingChat);
+
+                // อัปเดตไฟล์และสีพื้นหลัง
+                existingChat.FILENAME = filename;
+                existingChat.Color = backgroundColor;
+
+                _context.TB_CHATHISTRY.Update(existingChat); // อัปเดตแชทที่มีอยู่
             }
             else
             {
-                // ตรวจสอบว่าแชทระหว่าง senderId และ receiverId มี GUID หรือไม่
+                // ถ้าไม่พบแชทที่ตรงกัน ให้ตรวจสอบการแชทระหว่าง senderId และ receiverId
                 var chatWithSameIds = await _context.TB_CHATHISTRY
                     .FirstOrDefaultAsync(chat => chat.ID == senderId && chat.IDRECIVER == receiverId);
 
                 if (chatWithSameIds != null)
                 {
-                    // ถ้ามี GUID อื่นๆ ให้ใช้ GUID ที่มีอยู่เพื่ออัปเดตข้อความ
+                    // ถ้ามีแชทที่ตรงกันระหว่าง senderId และ receiverId แต่ GUID ไม่ตรง
                     if (!string.IsNullOrWhiteSpace(message))
                     {
-                        chatWithSameIds.MESSAGE += string.IsNullOrEmpty(chatWithSameIds.MESSAGE) ? message : "#$" + message;
+                        chatWithSameIds.MESSAGE += string.IsNullOrEmpty(chatWithSameIds.MESSAGE)
+                            ? message
+                            : "#$" + message; // เพิ่มข้อความไปที่แชทนี้
                     }
-                    _context.TB_CHATHISTRY.Update(chatWithSameIds);
+
+                    chatWithSameIds.FILENAME = filename;
+                    chatWithSameIds.Color = backgroundColor;
+
+                    _context.TB_CHATHISTRY.Update(chatWithSameIds); // อัปเดตแชทที่มีอยู่
                 }
                 else
                 {
-                    // ถ้าไม่มีประวัติการแชท ให้บันทึกข้อความเป็น null หรือ "" (ข้อความว่าง)
+                    // ถ้าไม่พบแชทที่ตรงกัน สร้างแชทใหม่
                     var newChat = new TB_CHATHISTRY
                     {
                         GUID = guid,
                         ID = senderId,
                         IDRECIVER = receiverId,
                         NAME = name,
-                        MESSAGE = string.IsNullOrWhiteSpace(message) ? null : message,  // บันทึกข้อความเป็น null ถ้า message เป็นค่าว่าง
-                        FILENAME = filename
+                        MESSAGE = string.IsNullOrWhiteSpace(message) ? null : message,
+                        FILENAME = filename,
+                        Color = backgroundColor
                     };
 
-                    await _context.TB_CHATHISTRY.AddAsync(newChat);
+                    await _context.TB_CHATHISTRY.AddAsync(newChat); // เพิ่มแชทใหม่
                 }
             }
 
-            // บันทึกการเปลี่ยนแปลง
+            // บันทึกการเปลี่ยนแปลงทั้งหมดในฐานข้อมูล
             await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException dbEx)
+        {
+            Console.WriteLine($"Database update error: {dbEx.Message}");
+            throw new HubException("An error occurred while saving chat history. Please try again.");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving chat history: {ex.Message}");
-            throw;
+            Console.WriteLine($"Error in SaveChatHistory: {ex.Message}");
+            throw new HubException("An unexpected error occurred while saving chat history.");
         }
     }
-
 
 
 
 
 
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
+{
+    if (string.IsNullOrWhiteSpace(senderId) || string.IsNullOrWhiteSpace(receiverId))
     {
-        // Look for an existing GUID for the chat between sender and receiver
-        var existingChat = await _context.TB_CHATHISTRY
-            .Where(c => (c.ID == senderId && c.IDRECIVER == receiverId) || (c.ID == receiverId && c.IDRECIVER == senderId))
-            .Select(c => c.GUID)
-            .FirstOrDefaultAsync();
-
-        // Return the existing GUID if found, otherwise create a new one
-        return existingChat ?? Guid.NewGuid().ToString();
+        throw new ArgumentException("Sender ID and Receiver ID cannot be null or empty.");
     }
 
+    if (senderId == receiverId)
+    {
+        throw new ArgumentException("Sender ID and Receiver ID cannot be the same.");
+    }
 
-    // โมเดลข้อมูลผู้ใช้
+    // ตรวจสอบแชทที่มีอยู่ในฐานข้อมูล
+    var existingChat = await _context.TB_CHATHISTRY
+        .Where(c => (c.ID == senderId && c.IDRECIVER == receiverId) || 
+                    (c.ID == receiverId && c.IDRECIVER == senderId))
+        .Select(c => c.GUID)
+        .FirstOrDefaultAsync();
+
+    // คืนค่า GUID ที่มีอยู่ หรือสร้าง GUID ใหม่ถ้าไม่พบแชท
+    return existingChat ?? Guid.NewGuid().ToString();
+}
+
+
+    
+
+
     public class GetUser
     {
         public string UserID { get; set; }
         public string FullName { get; set; }
         public bool? UserConnected { get; set; }
-        public string Message { get; set; }    // เพิ่ม property Message
-        public string Filename { get; set; }    // เพิ่ม property Filename
+        public string Message { get; set; }
+        public string Filename { get; set; }
+        public string SenderId { get; set; }    // รหัสผู้ส่งข้อความ
+        public string ReceiverId { get; set; }  // รหัสผู้รับข้อความ
+        public string BackgroundColor { get; set; }
+        public bool IsSender { get; set; }
     }
 }

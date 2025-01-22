@@ -18,4 +18,7 @@ public  class TB_CHATHISTRY
     public string MESSAGE { get; set; }
 
     public string FILENAME { get; set; }
+    public string Color { get; set; }
+
+
 }

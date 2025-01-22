@@ -3,22 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              Name="Chat"
              Focusable="False">
-
     <UserControl.Resources>
         <Style TargetType="Border">
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
-            <Setter Property="Background" Value="#cddeff " />
             <Setter Property="Margin" Value="0 5 0 0" />
             <Setter Property="Padding" Value="10 5" />
             <Setter Property="CornerRadius" Value="10" />
             <Setter Property="IsHitTestVisible" Value="False" />
-           
-               
-          
         </Style>
     </UserControl.Resources>
-
-    <Border>
-        <TextBlock Text="{Binding Message}" FontSize="14" Foreground="black" VerticalAlignment="Center" Margin="3 0 3 2" />
+    <Border Background="{Binding Background}">
+        <TextBlock Text="{Binding message}" FontSize="14" Foreground="Black" VerticalAlignment="Center" Margin="3 0 3 2" />
     </Border>
 </UserControl>

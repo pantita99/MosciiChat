@@ -22,7 +22,7 @@
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <local:MultiBoolToVisibilityConverter x:Key="MultiBoolToVis" />
-
+        <local:BoolToHorizontalAlignmentConverter x:Key="BoolToHorizontalAlignmentConverter" />
 
     </Window.Resources>
 
@@ -306,7 +306,7 @@
         </Grid>
 
 
-        <!-- Right side: Chat area -->
+       
         <Border CornerRadius="20" Background="#FFFFFF" BorderBrush="Transparent"
             Grid.Column="1" Margin="10,55,30,20" Grid.ColumnSpan="2" Grid.RowSpan="2" BorderThickness="1">
             <Border.Effect>
@@ -315,25 +315,26 @@
 
             <Grid>
                 <Grid.RowDefinitions>
-                    <!-- กำหนด Row สำหรับแสดงข้อความให้มีความยืดหยุ่น -->
+                  
                     <RowDefinition Height="*" />
-                    <!-- ส่วนข้อความ -->
+                    
                     <RowDefinition Height="Auto" />
-                    <!-- ส่วนของ TextBox -->
+                   
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
-                <!-- Messages area -->
+               
                 <Border CornerRadius="10" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
                     <ScrollViewer x:Name="messagesScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                        <ListBox x:Name="messagesList" Padding="5,10,5,0" HorizontalContentAlignment="Right" BorderThickness="0" Background="Transparent"
-                     IsHitTestVisible="False" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                        <ListBox x:Name="messagesList" Padding="5,10,5,0"  BorderThickness="0" Background="Transparent"  HorizontalAlignment="{Binding IsSender, Converter={StaticResource BoolToHorizontalAlignmentConverter}}"
+                     IsHitTestVisible="False" Margin="0" ScrollViewer.VerticalScrollBarVisibility="Auto"  />
+                        
                     </ScrollViewer>
                 </Border>
 
-                <!-- Input message area -->
+                
                 <Border Grid.Row="1" CornerRadius="20">
                     <Grid>
                         <Grid.ColumnDefinitions>
