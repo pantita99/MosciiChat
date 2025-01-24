@@ -43,7 +43,7 @@ namespace Client
         {
             InitializeComponent();
             InitializeSignalR();
-            StartUserStatusRefresh();
+            //StartUserStatusRefresh();
             Messages = new ObservableCollection<GetUserHistory>();
             Users = new ObservableCollection<GetUserHistory>();
             GetUserList.ItemsSource = Users;
@@ -113,17 +113,12 @@ namespace Client
         {
             try
             {
-
-                var usersWithChatHistory = await _connection.InvokeAsync<List<GetUser>>("GetUserListWithChatHistory");
-
+                var usersWithChatHistory = await _connection.InvokeAsync<List<GetUser>>("GetUserListWithChatHistory", myUserID);
                 usersWithHistory.Clear();
-
                 foreach (var user in usersWithChatHistory)
                 {
                     usersWithHistory.Add(user);
                 }
-
-
                 GetUserListWithChatHistory.ItemsSource = usersWithHistory;
             }
             catch (Exception ex)
@@ -182,30 +177,28 @@ namespace Client
             get { return _isPlaceholderVisible; }
             set { SetValue(IsPlaceholderVisibleProperty, value); }
         }
-        private void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private async void UsersListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
             if (usersWithoutHistory == null || usersWithHistory == null)
             {
                 MessageBox.Show("User lists are not initialized.");
-                return;
+                
             }
-
             if (GetUserList.SelectedItem is GetUser selectedUser)
             {
 
-                selectedUserId = selectedUser.UserID;
-                selectedUserFullname = selectedUser.FullName;
-
-                if (usersWithHistory != null)
+                //selectedUserId = selectedUser.UserID;
+                //selectedUserFullname = selectedUser.FullName;
+                var checkUserHistory = usersWithHistory.FirstOrDefault(user => user.UserID == selectedUser.UserID);
+                if (checkUserHistory != null)
                 {
-                    var selectedChatUser = usersWithHistory.FirstOrDefault(user => user.UserID == selectedUserId);
-                    if (selectedChatUser != null)
-                    {
-                        GetUserListWithChatHistory.SelectedItem = selectedChatUser;
-                    }
-                }
 
+                }
+                else 
+                {
+                    await _connection.InvokeAsync("SaveChatHistory", myUserID, selectedUser.UserID, selectedUser.FullName, "", "", "");
+                }
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
@@ -221,49 +214,49 @@ namespace Client
 
             try
             {
-                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, selectedUserId);
+                //var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, selectedUserId);
 
-                if (string.IsNullOrWhiteSpace(chatGuid))
-                {
-                    MessageBox.Show("ไม่สามารถสร้างหรือดึง GUID สำหรับแชทได้");
-                    return;
-                }
+                //if (string.IsNullOrWhiteSpace(chatGuid))
+                //{
+                //    MessageBox.Show("ไม่สามารถสร้างหรือดึง GUID สำหรับแชทได้");
+                //    return;
+                //}
 
-                var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid","001","adgem");
+                //var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid","001","adgem");
 
-                messagesList.Items.Clear();
+                //messagesList.Items.Clear();
 
-                if (chatHistory == null || !chatHistory.Any()) return;
+                //if (chatHistory == null || !chatHistory.Any()) return;
 
-                foreach (var message in chatHistory)
-                {
-                    if (!string.IsNullOrWhiteSpace(message?.Message))
-                    {
-                        var messageParts = message.Message.Split('$')
-                            .Select(part => part.TrimEnd('#')) // ลบ # ออกจากตอนท้าย
-                            .Where(part => !string.IsNullOrWhiteSpace(part)) // ลบส่วนที่ว่างเปล่า
-                            .ToList();
+                //foreach (var message in chatHistory)
+                //{
+                //    if (!string.IsNullOrWhiteSpace(message?.Message))
+                //    {
+                //        var messageParts = message.Message.Split('$')
+                //            .Select(part => part.TrimEnd('#')) // ลบ # ออกจากตอนท้าย
+                //            .Where(part => !string.IsNullOrWhiteSpace(part)) // ลบส่วนที่ว่างเปล่า
+                //            .ToList();
 
-                        var isOwnMessage = message.Filename == myUserID;
+                //        var isOwnMessage = message.Filename == myUserID;
 
-                        foreach (var part in messageParts)
-                        {
-                            var messageControl = new Items.mymessage
-                            {
-                                DataContext = new GetUserHistory
-                                {
-                                    message = part // ข้อความแต่ละส่วน
-                                },
-                                HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left,
-                                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-                                    isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามผู้ส่ง
-                                ))
-                            };
+                //        foreach (var part in messageParts)
+                //        {
+                //            var messageControl = new Items.mymessage
+                //            {
+                //                DataContext = new GetUserHistory
+                //                {
+                //                    message = part // ข้อความแต่ละส่วน
+                //                },
+                //                HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                //                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+                //                    isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามผู้ส่ง
+                //                ))
+                //            };
 
-                            messagesList.Items.Add(messageControl);
-                        }
-                    }
-                }
+                //            messagesList.Items.Add(messageControl);
+                //        }
+                //    }
+                //}
 
             }
             catch (Exception ex)

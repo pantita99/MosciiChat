@@ -94,71 +94,71 @@ public class ChatHub : Hub
 
         await Clients.User(receiverId).SendAsync("ReceiveFile", fileName, fileBytes);
     }
-    public async Task<List<GetUser>> GetChatHistory(string SenderId, string ReceiverId)
-    {
-        try
-        {
+    //public async Task<List<GetUser>> GetChatHistory(string SenderId, string ReceiverId)
+    //{
+    //    try
+    //    {
             
-            var chatHistory = await _context.TB_CHATHISTRY
-                .Where(chat =>
-                    (chat.IDSENDER == SenderId && chat.IDRECIVER == ReceiverId) ||
-                    (chat.IDSENDER == ReceiverId && chat.IDRECIVER == SenderId))
-                .OrderBy(chat => chat.GUID) // หรือใช้ฟิลด์ที่ระบุเวลาส่งข้อความ
-                .Select(chat => new GetUser
-                {
-                    SenderId = chat.IDSENDER,
-                    ReceiverId = chat.IDRECIVER,
-                    Message = chat.MESSAGE,
+    //        var chatHistory = await _context.TB_CHATHISTRY
+    //            .Where(chat =>
+    //                (chat.IDSENDER == SenderId && chat.IDRECIVER == ReceiverId) ||
+    //                (chat.IDSENDER == ReceiverId && chat.IDRECIVER == SenderId))
+    //            .OrderBy(chat => chat.GUID) // หรือใช้ฟิลด์ที่ระบุเวลาส่งข้อความ
+    //            .Select(chat => new GetUser
+    //            {
+    //                SenderId = chat.IDSENDER,
+    //                ReceiverId = chat.IDRECIVER,
+    //                Message = chat.MESSAGE,
 
-                    BackgroundColor = chat.COLOR
+    //                BackgroundColor = chat.COLOR
                   
-                })
-            .ToListAsync();
+    //            })
+    //        .ToListAsync();
 
-            return chatHistory;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetCombinedChatHistory: {ex.Message}");
-            throw new HubException("An unexpected error occurred while retrieving chat history.");
-        }
+    //        return chatHistory;
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Console.WriteLine($"Error in GetCombinedChatHistory: {ex.Message}");
+    //        throw new HubException("An unexpected error occurred while retrieving chat history.");
+    //    }
         
-    }
+    //}
 
 
-    public async Task<List<GetUser>> GetChatHistoryByGuid(string senderId, string receiverId)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(receiverId))
-            {
-                throw new ArgumentException("SenderId และ ReceiverId ไม่สามารถเป็นค่าว่างได้");
-            }
+    //public async Task<List<GetUser>> GetChatHistoryByGuid(string senderId, string receiverId)
+    //{
+    //    try
+    //    {
+    //        if (string.IsNullOrEmpty(senderId) || string.IsNullOrEmpty(receiverId))
+    //        {
+    //            throw new ArgumentException("SenderId และ ReceiverId ไม่สามารถเป็นค่าว่างได้");
+    //        }
 
-            // ดึงประวัติแชทระหว่าง SenderId และ ReceiverId
-            var chatHistory = await _context.TB_CHATHISTRY
-                .Where(chat => (chat.IDSENDER == senderId && chat.IDRECIVER == receiverId) ||
-                               (chat.IDSENDER == receiverId && chat.IDRECIVER == senderId))
-                .ToListAsync();
+    //        // ดึงประวัติแชทระหว่าง SenderId และ ReceiverId
+    //        var chatHistory = await _context.TB_CHATHISTRY
+    //            .Where(chat => (chat.IDSENDER == senderId && chat.IDRECIVER == receiverId) ||
+    //                           (chat.IDSENDER == receiverId && chat.IDRECIVER == senderId))
+    //            .ToListAsync();
 
-            // แปลงข้อมูลเป็นรูปแบบที่ต้องการ
-            return chatHistory.Select(chat => new GetUser
-            {
-                SenderId = chat.IDSENDER,
-                ReceiverId = chat.IDRECIVER,
-                UserID = chat.IDSENDER, // หรือ chat.IDRECIVER ตามความเหมาะสม
-                FullName = chat.NAMEDRECIVER, // ปรับให้ตรงตามคอลัมน์จริงในตาราง
-                Message = chat.MESSAGE,
-                Filename = chat.FILENAME,
-                BackgroundColor = chat.COLOR
-            }).ToList();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error in GetChatHistory: {ex.Message}");
-            throw new HubException("An error occurred while retrieving chat history.");
-        }
-    }
+    //        // แปลงข้อมูลเป็นรูปแบบที่ต้องการ
+    //        return chatHistory.Select(chat => new GetUser
+    //        {
+    //            SenderId = chat.IDSENDER,
+    //            ReceiverId = chat.IDRECIVER,
+    //            UserID = chat.IDSENDER, // หรือ chat.IDRECIVER ตามความเหมาะสม
+    //            FullName = chat.NAMEDRECIVER, // ปรับให้ตรงตามคอลัมน์จริงในตาราง
+    //            Message = chat.MESSAGE,
+    //            Filename = chat.FILENAME,
+    //            BackgroundColor = chat.COLOR
+    //        }).ToList();
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        Console.WriteLine($"Error in GetChatHistory: {ex.Message}");
+    //        throw new HubException("An error occurred while retrieving chat history.");
+    //    }
+    //}
 
 
 
@@ -182,13 +182,11 @@ public class ChatHub : Hub
             throw new HubException("An error occurred while retrieving the user list.");
         }
     }
-    public async Task<List<GetUser>> GetUserListWithChatHistory()
+    public async Task<List<GetUser>> GetUserListWithChatHistory(string myUserID)
     {
         try
         {
-            var usersWithHistory = await _context.TB_AUTHENTICATION
-                .Where(auth => _context.TB_CHATHISTRY
-                    .Any(chat => chat.IDSENDER == auth.UserID.ToString() || chat.IDRECIVER == auth.UserID.ToString()))
+            var usersWithHistory = await _context.TB_AUTHENTICATION.Where(auth => _context.TB_CHATHISTRY.Any(chat => chat.IDSENDER == myUserID))
                 .Select(auth => new GetUser
                 {
                     UserID = auth.UserID.ToString(),
@@ -206,22 +204,15 @@ public class ChatHub : Hub
         }
     }
 
-    public async Task SaveChatHistory(string guid, string senderId, string receiverId, string name, string message, string filename = null, string backgroundColor = null)
+    public async Task SaveChatHistory(string senderId, string receiverId, string name, string message = null, string filename = null, string backgroundColor = null)
     {
-        if (string.IsNullOrWhiteSpace(guid) || string.IsNullOrWhiteSpace(senderId) || string.IsNullOrWhiteSpace(receiverId))
-        {
-            throw new ArgumentException("Invalid arguments. GUID, senderId, and receiverId cannot be null or empty.");
-        }
-
         try
         {
-            // ตรวจสอบแชทที่มีอยู่ระหว่าง senderId, receiverId, และ GUID
             var existingChat = await _context.TB_CHATHISTRY
-                .FirstOrDefaultAsync(chat => chat.GUID == guid && chat.IDSENDER == senderId && chat.IDRECIVER == receiverId);
+                .FirstOrDefaultAsync(x => x.IDSENDER == senderId || x.IDRECIVER == receiverId);
 
             if (existingChat != null)
             {
-                // หากพบแชทที่ตรงกันแล้ว
                 if (!string.IsNullOrWhiteSpace(message))
                 {
                     // เพิ่มข้อความใหม่ไปที่แชท
@@ -238,51 +229,56 @@ public class ChatHub : Hub
             }
             else
             {
-                // ถ้าไม่พบแชทที่ตรงกัน ให้ตรวจสอบการแชทระหว่าง senderId และ receiverId
-                var chatWithSameIds = await _context.TB_CHATHISTRY
-                    .FirstOrDefaultAsync(chat => chat.IDSENDER == senderId && chat.IDRECIVER == receiverId);
-
-                if (chatWithSameIds != null)
+                var newHistory = new TB_CHATHISTRY
                 {
-                    // ถ้ามีแชทที่ตรงกันระหว่าง senderId และ receiverId แต่ GUID ไม่ตรง
-                    if (!string.IsNullOrWhiteSpace(message))
-                    {
-                        chatWithSameIds.MESSAGE += string.IsNullOrEmpty(chatWithSameIds.MESSAGE)
-                            ? message
-                            : "#$" + message; // เพิ่มข้อความไปที่แชทนี้
-                    }
+                    
+                    GUID = new Guid().ToString(),
+                    IDSENDER = senderId,
+                    IDRECIVER = receiverId,
+                    NAMEDRECIVER = name,
+                    FULLNAMESENDER = "",
+                    MESSAGE = message,
+                    FILENAME = filename,
+                    COLOR = backgroundColor
+                };
+                await _context.TB_CHATHISTRY.AddAsync(newHistory); // เพิ่มแชทใหม่
+                //var chatWithSameIds = await _context.TB_CHATHISTRY
+                //    .FirstOrDefaultAsync(chat => chat.IDSENDER == senderId && chat.IDRECIVER == receiverId);
 
-                    chatWithSameIds.FILENAME = filename;
-                    chatWithSameIds.COLOR = backgroundColor;
+                //if (chatWithSameIds != null)
+                //{
+                //    // ถ้ามีแชทที่ตรงกันระหว่าง senderId และ receiverId แต่ GUID ไม่ตรง
+                //    if (!string.IsNullOrWhiteSpace(message))
+                //    {
+                //        chatWithSameIds.MESSAGE += string.IsNullOrEmpty(chatWithSameIds.MESSAGE)
+                //            ? message
+                //            : "#$" + message; // เพิ่มข้อความไปที่แชทนี้
+                //    }
 
-                    _context.TB_CHATHISTRY.Update(chatWithSameIds); // อัปเดตแชทที่มีอยู่
-                }
-                else
-                {
-                    // ถ้าไม่พบแชทที่ตรงกัน สร้างแชทใหม่
-                    var newChat = new TB_CHATHISTRY
-                    {
-                        GUID = guid,
-                        IDSENDER = senderId,
-                        IDRECIVER = receiverId,
-                        NAMEDRECIVER = name,
-                        FULLNAMESENDER = name,
-                        MESSAGE = string.IsNullOrWhiteSpace(message) ? null : message,
-                        FILENAME = filename,
-                        COLOR = backgroundColor
-                    };
+                //    chatWithSameIds.FILENAME = filename;
+                //    chatWithSameIds.COLOR = backgroundColor;
 
-                    await _context.TB_CHATHISTRY.AddAsync(newChat); // เพิ่มแชทใหม่
-                }
+                //    _context.TB_CHATHISTRY.Update(chatWithSameIds); // อัปเดตแชทที่มีอยู่
+                //}
+                //else
+                //{
+                //    // ถ้าไม่พบแชทที่ตรงกัน สร้างแชทใหม่
+                //    var newChat = new TB_CHATHISTRY
+                //    {
+                //        GUID = guid,
+                //        IDSENDER = senderId,
+                //        IDRECIVER = receiverId,
+                //        NAMEDRECIVER = name,
+                //        FULLNAMESENDER = name,
+                //        MESSAGE = string.IsNullOrWhiteSpace(message) ? null : message,
+                //        FILENAME = filename,
+                //        COLOR = backgroundColor
+                //    };
+
+                //    await _context.TB_CHATHISTRY.AddAsync(newChat); // เพิ่มแชทใหม่
+                //}
             }
-
-            // บันทึกการเปลี่ยนแปลงทั้งหมดในฐานข้อมูล
             await _context.SaveChangesAsync();
-        }
-        catch (DbUpdateException dbEx)
-        {
-            Console.WriteLine($"Database update error: {dbEx.Message}");
-            throw new HubException("An error occurred while saving chat history. Please try again.");
         }
         catch (Exception ex)
         {
@@ -290,7 +286,6 @@ public class ChatHub : Hub
             throw new HubException("An unexpected error occurred while saving chat history.");
         }
     }
-
 
     public async Task<string> GetOrCreateChatGuid(string senderId, string receiverId)
     {
@@ -322,11 +317,6 @@ public class ChatHub : Hub
         public string UserID { get; set; }
         public string FullName { get; set; }
         public bool? UserConnected { get; set; }
-        public string Message { get; set; }
-        public string Filename { get; set; }
-        public string SenderId { get; set; }    // รหัสผู้ส่งข้อความ
-        public string ReceiverId { get; set; }  // รหัสผู้รับข้อความ
-        public string BackgroundColor { get; set; }
        
     }
 }
