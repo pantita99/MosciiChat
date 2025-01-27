@@ -22,8 +22,8 @@ namespace Client
         private DispatcherTimer _statusRefreshTimer;
         private readonly string url = "http://localhost:5050/chatHub";
         //private readonly string url = "http://192.168.3.91:5050/chatHub";
-        public ObservableCollection<GetUserHistory> Messages { get; set; }
-        public ObservableCollection<GetUserHistory> Users { get; set; }
+        public ObservableCollection<GetChatHistory> Messages { get; set; }
+        public ObservableCollection<GetChatHistory> Users { get; set; }
         // เก็บประวัติการแชทของผู้ใช้แต่ละคน
         private Dictionary<string, ObservableCollection<GetUser>> userChatHistories = new Dictionary<string, ObservableCollection<GetUser>>();
         public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
@@ -44,8 +44,8 @@ namespace Client
             InitializeComponent();
             InitializeSignalR();
             //StartUserStatusRefresh();
-            Messages = new ObservableCollection<GetUserHistory>();
-            Users = new ObservableCollection<GetUserHistory>();
+            Messages = new ObservableCollection<GetChatHistory>();
+            Users = new ObservableCollection<GetChatHistory>();
             GetUserList.ItemsSource = Users;
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
             UsersWithChatHistory = new ObservableCollection<GetUser>();
@@ -143,18 +143,12 @@ namespace Client
             if (GetUserListWithChatHistory.SelectedItem is GetUser selectedUserWithHistory)
             {
                 selectedUserId = selectedUserWithHistory.UserID;
-                selectedUserFullname = selectedUserWithHistory.FullName;
-
-
                 ChatsRadioButton.IsChecked = true;
-
-
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
-
-
                 LoadChatHistory(selectedUserId);
+                messagesList.Items.Clear();
             }
             else
             {
@@ -188,22 +182,18 @@ namespace Client
             if (GetUserList.SelectedItem is GetUser selectedUser)
             {
 
-                //selectedUserId = selectedUser.UserID;
+                selectedUserId = selectedUser.UserID;
                 //selectedUserFullname = selectedUser.FullName;
                 var checkUserHistory = usersWithHistory.FirstOrDefault(user => user.UserID == selectedUser.UserID);
-                if (checkUserHistory != null)
+                if (checkUserHistory == null)
                 {
-
+                    await _connection.InvokeAsync("SaveChatHistory", myUserID, selectedUser.UserID, "", "", "");
                 }
-                else 
-                {
-                    await _connection.InvokeAsync("SaveChatHistory", myUserID, selectedUser.UserID, selectedUser.FullName, "", "", "");
-                }
+                await LoadUsersWithChatHistory();
                 IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
                 ChatsRadioButton.IsChecked = true;
-                LoadChatHistory(selectedUserId);
             }
 
 
@@ -214,49 +204,30 @@ namespace Client
 
             try
             {
-                //var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, selectedUserId);
-
-                //if (string.IsNullOrWhiteSpace(chatGuid))
-                //{
-                //    MessageBox.Show("ไม่สามารถสร้างหรือดึง GUID สำหรับแชทได้");
-                //    return;
-                //}
-
-                //var chatHistory = await _connection.InvokeAsync<List<GetUser>>("GetChatHistoryByGuid","001","adgem");
-
-                //messagesList.Items.Clear();
-
-                //if (chatHistory == null || !chatHistory.Any()) return;
-
-                //foreach (var message in chatHistory)
-                //{
-                //    if (!string.IsNullOrWhiteSpace(message?.Message))
-                //    {
-                //        var messageParts = message.Message.Split('$')
-                //            .Select(part => part.TrimEnd('#')) // ลบ # ออกจากตอนท้าย
-                //            .Where(part => !string.IsNullOrWhiteSpace(part)) // ลบส่วนที่ว่างเปล่า
-                //            .ToList();
-
-                //        var isOwnMessage = message.Filename == myUserID;
-
-                //        foreach (var part in messageParts)
-                //        {
-                //            var messageControl = new Items.mymessage
-                //            {
-                //                DataContext = new GetUserHistory
-                //                {
-                //                    message = part // ข้อความแต่ละส่วน
-                //                },
-                //                HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left,
-                //                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-                //                    isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามผู้ส่ง
-                //                ))
-                //            };
-
-                //            messagesList.Items.Add(messageControl);
-                //        }
-                //    }
-                //}
+                
+                var chatHistory = await _connection.InvokeAsync<List<GetChatHistory>>("GetChatHistory", myUserID, selectedUserId);
+                foreach (var message in chatHistory)
+                {
+                    if (!string.IsNullOrWhiteSpace(message.MESSAGE))
+                    {
+                        var messageParts = message.MESSAGE.Split("#$");
+                        foreach (var messasge in messageParts)
+                        {
+                            //var messageControl = new Items.mymessage
+                            //{
+                            //    DataContext = new GetUserHistory
+                            //    {
+                            //        message = part // ข้อความแต่ละส่วน
+                            //    },
+                            //    HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                            //    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+                            //        isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามผู้ส่ง
+                            //    ))
+                            //};
+                            messagesList.Items.Add(messasge);
+                        }
+                    }
+                }
 
             }
             catch (Exception ex)
@@ -269,25 +240,20 @@ namespace Client
         private void AddMessageToUI(string messageText, string senderUserID)
         {
             if (string.IsNullOrEmpty(messageText)) return;
-
-            // ตรวจสอบว่าเป็นข้อความของผู้ใช้เองหรือไม่
-            var isOwnMessage = senderUserID == myUserID;
-
-            // สร้างอินสแตนซ์ของ Items.mymessage
             var messageControl = new Items.mymessage
             {
-                DataContext = new GetUserHistory
-                {
-                    message = messageText.Trim()
-                },
-                Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-                    isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามฝั่งข้อความ
-                )),
-                HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left 
+                //DataContext = new GetChatHistory
+                //{
+                //    MESSAGE = messageText
+                //},
+                //Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
+                //    isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามฝั่งข้อความ
+                //)),
+                //HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left 
             };
 
             // เพิ่มข้อความลงใน ListBox
-            messagesList.Items.Add(messageControl);
+            messagesList.Items.Add(messageText);
 
             // เลื่อน Scroll ไปยังข้อความล่าสุด
             ScrollToBottom();
@@ -350,27 +316,10 @@ namespace Client
                     MessageBox.Show("Message cannot be empty");
                     return;
                 }
-
-                if (_connection.State != HubConnectionState.Connected)
-                {
-                    MessageBox.Show("Connection to the server is not established.");
-                    return;
-                }
-
-                var chatGuid = await _connection.InvokeAsync<string>("GetOrCreateChatGuid", myUserID, selectedUserId);
-
-
                 AddMessageToUI(messageText, myUserID);
-
-                // บันทึกประวัติการสนทนา
-                await _connection.InvokeAsync("SaveChatHistory", chatGuid, myUserID, "001", "test 001", messageText, null, null);
+                await _connection.InvokeAsync("SaveChatHistory", myUserID, selectedUserId, messageText, null, null);
 
                 messageTextbox.Text = string.Empty;
-            }
-            catch (HubException ex)
-            {
-                // แสดงข้อความข้อผิดพลาดที่ได้รับจาก Server
-                MessageBox.Show($"Error sending message: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -435,14 +384,10 @@ namespace Client
             }
             else if (sender == ChatsRadioButton)
             {
-
+                messagesList.Items.Clear();
                 ListNameContent.Visibility = Visibility.Collapsed;
                 ChatsContent.Visibility = Visibility.Visible;
-
-
                 messagesList.Visibility = Visibility.Visible;
-
-
                 if (!string.IsNullOrEmpty(selectedUserId))
                 {
                     IsChatVisible = true;
@@ -453,7 +398,6 @@ namespace Client
                     IsChatVisible = false;
                     Messages.Clear();
                 }
-
             }
         }
         private void RadioButton_Unchecked(object sender, RoutedEventArgs e)

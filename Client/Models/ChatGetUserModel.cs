@@ -22,17 +22,23 @@ namespace Client.Models
         public bool? UserConnected { get; set; }
 
     }
-    public class GetUserHistory
+    public class GetChatHistory
     {
-        public Guid GUID { get; set; }
+        public string GUID { get; set; }
+
         public string IDSENDER { get; set; }
+
         public string FULLNAMESENDER { get; set; }
-        public bool? IDRECIVER { get; set; }
-        public string FULLNAMERECIVER { get; set; } = null!;
-        public string MESSAGEHISTORY { get; set; } = null!;
-        public string FILENAME { get; set; } = null!;
-        public string message { get; set; }
-        public string MessageBackgroundColor { get; set; } = "#e5e5e5"; // Default: สีข้อความฝั่งซ้าย
+
+        public string IDRECIVER { get; set; }
+
+        public string NAMEDRECIVER { get; set; }
+
+        public string MESSAGE { get; set; }
+
+        public string FILENAME { get; set; }
+
+        public string COLOR { get; set; }
     }
 
 }
