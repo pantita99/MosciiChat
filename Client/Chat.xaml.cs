@@ -17,39 +17,26 @@ namespace Client
 {
     public partial class Chat : Window
     {
-        private readonly string myUserID = "adgem";
+        private readonly string myUserID = "001";
         private HubConnection _connection;
-        private DispatcherTimer _statusRefreshTimer;
         private readonly string url = "http://localhost:5050/chatHub";
         //private readonly string url = "http://192.168.3.91:5050/chatHub";
-        public ObservableCollection<GetChatHistory> Messages { get; set; }
-        public ObservableCollection<GetChatHistory> Users { get; set; }
-        // เก็บประวัติการแชทของผู้ใช้แต่ละคน
-        private Dictionary<string, ObservableCollection<GetUser>> userChatHistories = new Dictionary<string, ObservableCollection<GetUser>>();
-        public ObservableCollection<string> SplitMessages { get; set; } = new ObservableCollection<string>();
         public ObservableCollection<GetUser> usersWithoutHistory { get; set; } = new ObservableCollection<GetUser>();
         public ObservableCollection<GetUser> usersWithHistory { get; set; } = new ObservableCollection<GetUser>();
         public ObservableCollection<GetUser> UsersWithChatHistory { get; set; } = new ObservableCollection<GetUser>();
         public static readonly DependencyProperty IsPlaceholderVisibleProperty = DependencyProperty.Register("IsPlaceholderVisible", typeof(bool), typeof(Chat), new PropertyMetadata(true));
-        private string selectedUserFullname;
         private string selectedUserId;
-        public string TextMessage { get; set; }
         private bool _isChatVisible = false;
-        public static readonly DependencyProperty IsChatVisibleProperty =
-            DependencyProperty.Register("IsChatVisible", typeof(bool), typeof(Chat), new PropertyMetadata(false));
-
+        //public static readonly DependencyProperty IsChatVisibleProperty = DependencyProperty.Register("IsChatVisible", typeof(bool), typeof(Chat), new PropertyMetadata(false));
         private bool _isPlaceholderVisible = true;
         public Chat()
         {
             InitializeComponent();
             InitializeSignalR();
             //StartUserStatusRefresh();
-            Messages = new ObservableCollection<GetChatHistory>();
-            Users = new ObservableCollection<GetChatHistory>();
-            GetUserList.ItemsSource = Users;
+            //Messages = new ObservableCollection<GetChatHistory>();
             GetUserListWithChatHistory.ItemsSource = UsersWithChatHistory;
             UsersWithChatHistory = new ObservableCollection<GetUser>();
-            DataContext = this;
         }
         private async void InitializeSignalR()
         {
@@ -144,7 +131,7 @@ namespace Client
             {
                 selectedUserId = selectedUserWithHistory.UserID;
                 ChatsRadioButton.IsChecked = true;
-                IsChatVisible = true;
+                //IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
                 LoadChatHistory(selectedUserId);
@@ -153,18 +140,10 @@ namespace Client
             else
             {
                 selectedUserId = null;
-                selectedUserFullname = null;
-                Messages.Clear();
-
-
-                IsChatVisible = false;
+                //Messages.Clear();
+                //IsChatVisible = false;
                 IsPlaceholderVisible = false;
             }
-        }
-        public bool IsChatVisible
-        {
-            get { return _isChatVisible; }
-            set { SetValue(IsChatVisibleProperty, value); }
         }
         public bool IsPlaceholderVisible
         {
@@ -183,17 +162,17 @@ namespace Client
             {
 
                 selectedUserId = selectedUser.UserID;
-                //selectedUserFullname = selectedUser.FullName;
                 var checkUserHistory = usersWithHistory.FirstOrDefault(user => user.UserID == selectedUser.UserID);
                 if (checkUserHistory == null)
                 {
                     await _connection.InvokeAsync("SaveChatHistory", myUserID, selectedUser.UserID, "", "", "");
                 }
                 await LoadUsersWithChatHistory();
-                IsChatVisible = true;
+                //IsChatVisible = true;
                 messageTextbox.Text = string.Empty;
                 IsPlaceholderVisible = true;
                 ChatsRadioButton.IsChecked = true;
+                GetUserList.SelectedItem = selectedUser;
             }
 
 
@@ -211,8 +190,18 @@ namespace Client
                     if (!string.IsNullOrWhiteSpace(message.MESSAGE))
                     {
                         var messageParts = message.MESSAGE.Split("#$");
-                        foreach (var messasge in messageParts)
+                        foreach (var listMessage in messageParts)
                         {
+                            var splitMessageAndUser = listMessage.Split("|");
+                            if (splitMessageAndUser[0] == myUserID)
+                            {
+                                //ข้อความโชว์ข้างขวา
+                            }
+                            else 
+                            {
+                                //ข้อความโชว์ข้างซ้าย
+                            }
+                            messagesList.Items.Add(splitMessageAndUser[1]);
                             //var messageControl = new Items.mymessage
                             //{
                             //    DataContext = new GetUserHistory
@@ -224,7 +213,7 @@ namespace Client
                             //        isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามผู้ส่ง
                             //    ))
                             //};
-                            messagesList.Items.Add(messasge);
+
                         }
                     }
                 }
@@ -351,9 +340,6 @@ namespace Client
                     {
 
                         await _connection.InvokeAsync("SendFile", selectedUserId, fileName, base64File);
-
-
-                        await _connection.InvokeAsync("SaveChatHistory", "yourCurrentUserId", selectedUserId, $"[Sent a file: {fileName}]", selectedUserFullname, fileName);
                     }
                     else
                     {
@@ -375,11 +361,6 @@ namespace Client
 
                 ListNameContent.Visibility = Visibility.Visible;
                 ChatsContent.Visibility = Visibility.Collapsed;
-
-
-                IsChatVisible = false;
-                Messages.Clear();
-
                 messagesList.Visibility = Visibility.Collapsed;
             }
             else if (sender == ChatsRadioButton)
@@ -390,13 +371,12 @@ namespace Client
                 messagesList.Visibility = Visibility.Visible;
                 if (!string.IsNullOrEmpty(selectedUserId))
                 {
-                    IsChatVisible = true;
+                    IsPlaceholderVisible = true;
                     LoadChatHistory(selectedUserId);
                 }
                 else
                 {
-                    IsChatVisible = false;
-                    Messages.Clear();
+       
                 }
             }
         }

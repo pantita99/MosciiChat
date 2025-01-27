@@ -117,27 +117,26 @@ public class ChatHub : Hub
         try
         {
             var existingChat = await _context.TB_CHATHISTRY
-                .FirstOrDefaultAsync(x => x.IDSENDER == senderId && x.IDRECIVER == receiverId);
+                .Where(x => (x.IDSENDER == senderId && x.IDRECIVER == receiverId) ||
+                                                (x.IDSENDER == receiverId && x.IDRECIVER == senderId)).ToListAsync();
 
-            if (existingChat != null)
+
+            if (existingChat.Count > 0)
             {
-                if (!string.IsNullOrWhiteSpace(message))
+                if (!string.IsNullOrEmpty(message)) 
                 {
-                    // เพิ่มข้อความใหม่ไปที่แชท
-                    existingChat.MESSAGE += string.IsNullOrEmpty(existingChat.MESSAGE)
-                        ? message
-                        : "#$" + message; // เชื่อมข้อความใหม่
+                    foreach (var chat in existingChat) 
+                    {
+                        chat.MESSAGE = !string.IsNullOrEmpty(chat.MESSAGE)
+                                        ? chat.MESSAGE + "#$" + $"{senderId}|" + message
+                                        : $"{senderId}|" + message;
+                    }
                 }
-
-                // อัปเดตไฟล์และสีพื้นหลัง
-                existingChat.FILENAME = filename;
-                existingChat.COLOR = backgroundColor;
-
-                _context.TB_CHATHISTRY.Update(existingChat); // อัปเดตแชทที่มีอยู่
+                await _context.SaveChangesAsync();
             }
             else 
             {
-                var newChat = new TB_CHATHISTRY
+                var newChatSender = new TB_CHATHISTRY
                 {
                     GUID = Guid.NewGuid().ToString(),
                     IDSENDER = senderId,
@@ -147,7 +146,18 @@ public class ChatHub : Hub
                     FULLNAMESENDER = "",
                     FILENAME = filename
                 };
-                _context.TB_CHATHISTRY.Add(newChat);
+                var newChatReciver = new TB_CHATHISTRY
+                {
+                    GUID = Guid.NewGuid().ToString(),
+                    IDSENDER = receiverId,
+                    IDRECIVER = senderId,
+                    MESSAGE = message,
+                    NAMEDRECIVER = "",
+                    FULLNAMESENDER = "",
+                    FILENAME = filename
+                };
+                _context.TB_CHATHISTRY.Add(newChatSender);
+                _context.TB_CHATHISTRY.Add(newChatReciver);
             }
             await _context.SaveChangesAsync();
         }
