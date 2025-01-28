@@ -13,6 +13,6 @@
         </Style>
     </UserControl.Resources>
     <Border Background="{Binding Background}">
-        <TextBlock Text="{Binding message}" FontSize="14" Foreground="Black" VerticalAlignment="Center" Margin="3 0 3 2" />
+        <TextBlock Text="{Binding Message}" FontSize="14" Foreground="Black" VerticalAlignment="Center" Margin="3 0 3 2" />
     </Border>
 </UserControl>

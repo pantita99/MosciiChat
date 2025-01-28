@@ -183,41 +183,38 @@ namespace Client
 
             try
             {
-                
                 var chatHistory = await _connection.InvokeAsync<List<GetChatHistory>>("GetChatHistory", myUserID, selectedUserId);
+
                 foreach (var message in chatHistory)
                 {
                     if (!string.IsNullOrWhiteSpace(message.MESSAGE))
                     {
                         var messageParts = message.MESSAGE.Split("#$");
+
                         foreach (var listMessage in messageParts)
                         {
                             var splitMessageAndUser = listMessage.Split("|");
-                            if (splitMessageAndUser[0] == myUserID)
-                            {
-                                //ข้อความโชว์ข้างขวา
-                            }
-                            else 
-                            {
-                                //ข้อความโชว์ข้างซ้าย
-                            }
-                            messagesList.Items.Add(splitMessageAndUser[1]);
-                            //var messageControl = new Items.mymessage
-                            //{
-                            //    DataContext = new GetUserHistory
-                            //    {
-                            //        message = part // ข้อความแต่ละส่วน
-                            //    },
-                            //    HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left,
-                            //    Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-                            //        isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามผู้ส่ง
-                            //    ))
-                            //};
+                            bool isOwnMessage = splitMessageAndUser[0] == myUserID;
 
+                            // สร้าง messageControl สำหรับแสดงข้อความ
+                            var messageControl = new Items.mymessage
+                            {
+                                DataContext = new
+                                {
+                                    Message = splitMessageAndUser[1], // ข้อความ
+                                    Background = isOwnMessage ? "LightBlue" : "LightGray" 
+                                },
+                                HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left,
+                            };
+
+                            // เพิ่มข้อความลงใน ListBox
+                            messagesList.Items.Add(messageControl);
                         }
                     }
                 }
 
+                // เลื่อน Scroll ไปยังข้อความล่าสุด
+                ScrollToBottom();
             }
             catch (Exception ex)
             {
@@ -226,27 +223,34 @@ namespace Client
         }
 
 
-        private void AddMessageToUI(string messageText, string senderUserID)
+
+        private void AddMessageToUI(string messageText, string senderUserID, string myUserID)
         {
             if (string.IsNullOrEmpty(messageText)) return;
+
+            // ตรวจสอบว่าเป็นข้อความของผู้ใช้งานปัจจุบันหรือไม่
+            bool isOwnMessage = senderUserID == myUserID;
+
+            // สร้าง messageControl สำหรับแสดงข้อความ
             var messageControl = new Items.mymessage
             {
-                //DataContext = new GetChatHistory
-                //{
-                //    MESSAGE = messageText
-                //},
-                //Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString(
-                //    isOwnMessage ? "#cddeff" : "#e5e5e5" // สีพื้นหลังตามฝั่งข้อความ
-                //)),
-                //HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left 
+                DataContext = new
+                {
+                    Message = messageText, // ข้อความ
+                    Background = isOwnMessage ? "LightBlue" : "LightGray" // สีพื้นหลังตามผู้ส่ง
+                },
+                HorizontalAlignment = isOwnMessage ? HorizontalAlignment.Right : HorizontalAlignment.Left // จัดตำแหน่งตามผู้ส่ง
             };
 
-            // เพิ่มข้อความลงใน ListBox
-            messagesList.Items.Add(messageText);
+            // เพิ่ม Items.mymessage ลงใน ListBox
+            messagesList.Items.Add(messageControl);
 
             // เลื่อน Scroll ไปยังข้อความล่าสุด
             ScrollToBottom();
         }
+
+
+
 
 
 
@@ -305,7 +309,8 @@ namespace Client
                     MessageBox.Show("Message cannot be empty");
                     return;
                 }
-                AddMessageToUI(messageText, myUserID);
+                AddMessageToUI(messageText, myUserID, myUserID);
+
                 await _connection.InvokeAsync("SaveChatHistory", myUserID, selectedUserId, messageText, null, null);
 
                 messageTextbox.Text = string.Empty;

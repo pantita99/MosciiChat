@@ -329,14 +329,14 @@
                 <Border CornerRadius="10" ClipToBounds="True" BorderThickness="1" Grid.Row="0" Opacity="0.9" Margin="0,0,0,5" VerticalAlignment="Stretch">
                     <ScrollViewer x:Name="messagesScrollViewer" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                         <ListBox x:Name="messagesList"
-         Padding="5,10,5,0"
-         BorderThickness="0"
-         Background="Transparent"
-         IsHitTestVisible="False"
-         Margin="0"
-         ScrollViewer.VerticalScrollBarVisibility="Auto"
-         HorizontalContentAlignment="Stretch">
-                            <!-- ใช้ Stretch เพื่อจัดตำแหน่งข้อความ -->
+                         Padding="5,10,5,0"
+                         BorderThickness="0"
+                         Background="Transparent"
+                         IsHitTestVisible="False"
+                         Margin="0"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         HorizontalContentAlignment="Stretch">
+                          
                            
                         </ListBox>
 
